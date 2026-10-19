@@ -1,5 +1,11 @@
 # NEXUS BLOCKS: ENDLESS
 
+## Descargas
+
+- **[Descargar juego completo (.zip)](https://github.com/Dracalight/Blocks/archive/refs/heads/main.zip)** — incluye el proyecto Scratch, documentación y herramientas.
+- **[Descargar juego Scratch (.sb3)](https://github.com/Dracalight/Blocks/raw/refs/heads/main/NEXUS-BLOCKS-ENDLESS.sb3)** — importa este archivo directamente en [Scratch](https://scratch.mit.edu/projects/editor/).
+
+
 Videojuego arcade de bloques descendentes desarrollado íntegramente para **Scratch 3** (`.sb3`), diseñado específicamente para funcionar con fluidez en el navegador de un **iPad escolar** (controles táctiles ergonómicos en pantalla horizontal) y en ordenadores de escritorio o portátiles (controles de teclado), sin instalar software adicional, sin requerir inicio de sesión y sin depender de extensiones externas ni de modificaciones tipo TurboWarp.
 
 ## Contenido del Repositorio
