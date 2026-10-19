@@ -1,61 +1,33 @@
-# Arquitectura Interna — NEXUS BLOCKS: ENDLESS
+# Arquitectura — NEXUS BLOCKS V2
 
-Este documento explica cómo está estructurado el proyecto dentro de Scratch 3 para que cualquier estudiante o desarrollador pueda inspeccionar, comprender y modificar sus sistemas sin romper la lógica del juego.
+El juego existente sigue generado por tools/build_sb3.py como proyecto Scratch 3 nativo. No hay runtime web externo. La extensión oficial Pen estampa el tablero y el HUD sin clones ni monitores. Los cuatro targets son Stage, Motor_Juego, Efecto_Linea y Pantalla_Estado. Se eliminaron sprites, recursos y eventos táctiles.
 
-## 1. Principios de Diseño en Scratch 3
+## Planificación y gravedad
 
-1. **Cero uso de clones para el tablero (Extensión Oficial Lápiz / Pen)**:
-   * Scratch 3 impone un límite estricto de **300 clones** simultáneos. Un tablero de `10x20` celdas ocupa por sí solo 200 bloques, lo que sumado a la interfaz y vistas previas satura fácilmente el motor si se usan clones.
-   * Para garantizar un rendimiento constante en el navegador de un iPad escolar, el objeto **`Motor_Juego`** utiliza un bloque personalizado con la opción **"Ejecutar sin actualizar la pantalla" (`warp: true`)** llamado `Renderizar_Todo`. En cada actualización, borra el lienzo (`pen_clear`) y estampa (`pen_stamp`) únicamente las celdas ocupadas del tablero, las 4 celdas de la pieza fantasma, las 4 de la pieza activa y las miniaturas de `HOLD` y `NEXT`.
-2. **Separación estricta de responsabilidades por Objetos (Sprites)**:
-   * **`Stage` (Escenario)**: Almacena todas las variables globales, las listas de datos y los fondos vectoriales (`Fondo_Arcade` y `Fondo_Caos`).
-   * **`Motor_Juego`**: Contiene toda la lógica matemática, física de colisiones, rotación, bolsa de 7 piezas, puntuación, bucle principal de tiempo y renderizador Lápiz.
-   * **`Efecto_Linea`**: Muestra animaciones no bloqueantes (`¡LÍNEA!`, `¡DOBLE!`, `¡TRIPLE!`, `¡NEXUS x4!`) cuando se eliminan filas.
-   * **`Pantalla_Estado`**: Gestiona las pantallas superpuestas de Menú Principal, Pausa, Game Over y Victoria en Sprint 40L.
-   * **10 Objetos de Botones Táctiles (`Btn_*`)**: Cada botón táctil es un objeto independiente con detección directa de toque (`al hacer clic en este objeto` + sensor `¿ratón presionado? y ¿tocando puntero del ratón?`), lo que evita conflictos de coordenadas y permite mantener pulsado para desplazar piezas en el iPad.
+Un único hilo ejecuta Tick, Leer_Teclado y una espera cooperativa de 0.01 s. Los procedimientos finitos son warp y atómicos. El planificador de Scratch limita la cadencia a los frames disponibles; una espera de 0.01 no promete 100 FPS.
 
-## 2. Representación del Tablero y Geometría de las Piezas
+Tick lee sensing_timer, calcula el delta y actualiza Ultimo_Tick incluso en pausa. Solo en JUGANDO añade tiempo a Tiempo_Juego. Limita el delta a 0.1 s para descartar retrasos de pestañas suspendidas. Todas las deadlines de física y Chaos usan este reloj lógico. Reiniciar restaura su origen. Pausar conserva el tiempo restante de gravedad, bloqueo y eventos.
 
-### Lista `Tablero` (200 elementos)
-El tablero visible de **10 columnas** (`c` de `1` a `10`, de izquierda a derecha) y **20 filas** (`f` de `1` a `20`, de arriba hacia abajo) se almacena en la lista unidimensional `Tablero` mediante la fórmula de índice en base 1 de Scratch:
+Actualizar_Velocidad_Y_Caos centraliza la fórmula: base / (1 + (nivel - 1) * factor), con bases 0.65 / 0.30 / 0.23 y factores 0.045 / 0.055 / 0.04 para NORMAL / HARD / CHAOS. Chaos divide además por (1 + tiempo / 180); SPEED BURST multiplica por 0.5. El intervalo final nunca baja de 0.07 s. Cada 10 líneas sube el nivel. La gravedad se evalúa aunque no haya teclas pulsadas.
 
-$$\text{índice} = (f - 1) \times 10 + c$$
+Al detectar superficie, Bloqueo registra el tiempo lógico. Si sigue en superficie tras 0.35 s, se fija la pieza y aparece la siguiente. Despegarse borra el contador. Los movimientos sobre superficie no lo reinician indefinidamente. Hard drop fija inmediatamente. Spawn y hold restablecen el contador; un hold que colisiona en la aparición termina la partida.
 
-* Valor `0`: Celda vacía.
-* Valores `1` a `7`: Bloque fijado con el color de la pieza correspondiente (`1 = I Cian`, `2 = O Amarillo`, `3 = T Púrpura`, `4 = S Verde`, `5 = Z Rojo`, `6 = J Azul`, `7 = L Naranja`).
+## Entrada
 
-### Tablas de Geometría Precalculadas (`Offset_X` y `Offset_Y`, 112 elementos)
-En lugar de encadenar decenas de bloques condicionales `si / si no` para saber dónde están los 4 cuadrados de cada pieza en cada rotación, el proyecto utiliza dos listas constantes de **112 números** (`7 piezas × 4 rotaciones × 4 bloques`):
+Leer_Teclado consulta sensores oficiales. Los latches key_* detectan flancos para giro, hard drop, hold, pausa, restart, selección y Enter. Solo izquierda/derecha/abajo repiten mediante deadlines reales separadas de la gravedad (160 ms DAS, 50 ms ARR; abajo 50 ms). No hay hats de teclado que se reinicien con el autorepeat del sistema operativo. La entrada y la física mutan el estado en el mismo hilo.
 
-$$\text{tabla\_idx} = ((\text{tipo} - 1) \times 16) + (\text{rot} \times 4) + i \quad (i \in \{1, 2, 3, 4\})$$
+## Chaos
 
-Para cualquier pieza `tipo` (`1..7`) y orientación `rot` (`0..3`), las coordenadas en el tablero de su bloque $i$-ésimo son:
-* $\text{bloque\_col} = \text{col} + \text{elemento}(\text{tabla\_idx}) \text{ de } \text{Offset\_X}$
-* $\text{bloque\_fila} = \text{fila} + \text{elemento}(\text{tabla\_idx}) \text{ de } \text{Offset\_Y}$
+El primer evento empieza a los 12 segundos. Alterna DIFFICULT PIECES y SPEED BURST durante 7 segundos. La frecuencia aumenta con la supervivencia: intervalo de ataque = max(10, 25 - tiempo/30); el siguiente evento se programa a 0.6 veces ese intervalo. No hay gravedad lunar ni bonus que sustituyan desafío.
 
-## 3. Bloques Personalizados ("Mis Bloques") en `Motor_Juego`
+DIFFICULT PIECES sesga futuras extracciones hacia S/Z con un 65% de sustitución. NEXT anuncia la pieza que realmente aparecerá. Fuera del evento se conserva el 7-bag clásico.
 
-Todos los bloques personalizados se ejecutan con `warp = true` (*Sin actualizar la pantalla*) para completarse de forma atómica dentro de un mismo fotograma:
+El primer garbage llega a los 25 segundos con aviso de 2 segundos. Desplaza el tablero una fila arriba e introduce 9 obstáculos y un hueco aleatorio abajo. Si había celdas fijadas en la fila superior hay top-out. La pieza activa permanece si sigue libre; si colisiona con el tablero desplazado, se eleva una fila y se comprueba otra vez. Se recalcula el fantasma. Una pieza recién aparecida no se eleva innecesariamente.
 
-| Bloque Personalizado | Responsabilidad Técnica |
-| :--- | :--- |
-| `Rellenar_Bolsa_7` | Comprueba si la lista `Bolsa_7` está vacía; si lo está, inserta las piezas `1, 2, 3, 4, 5, 6, 7`. |
-| `Extraer_De_Bolsa` | Elige un índice al azar de `Bolsa_7`, guarda el valor en `temp_pieza`, lo elimina de la lista y recarga la bolsa si queda vacía. Garantiza que nunca salgan más de 2 piezas iguales seguidas y que cada ciclo de 7 piezas contenga todos los tetrominós. |
-| `Comprobar_Colision (tipo) (col) (fila) (rot)` | Recorre los 4 bloques de la pieza propuesta. Si alguno sale de `col 1..10` o `fila 1..20`, o coincide con una celda de `Tablero > 0`, asigna `Colision_Detectada = 1`; en caso contrario, `0`. |
-| `Mover_Horizontal (delta_col)` | Verifica con `Comprobar_Colision` si `Pieza_Col + delta_col` está libre. Si no hay colisión, actualiza `Pieza_Col`, reproduce `Sonido_Mover`, recalcula la pieza fantasma y redibuja. |
-| `Rotar_Pieza` | Calcula `test_rot = (Pieza_Rotacion + 1) mod 4` y prueba secuencialmente los 6 desplazamientos de las listas `Kick_X` (`[0, -1, 1, 0, -2, 2]`) y `Kick_Y` (`[0, 0, 0, -1, 0, 0]`). Aplica el primer desplazamiento sin colisión (*Wall Kick*). |
-| `Actualizar_Fantasma` | Parte de `Fila_Fantasma = Pieza_Fila` e incrementa fila a fila hasta detectar colisión en `Fila_Fantasma + 1`, determinando el punto exacto de aterrizaje. |
-| `Paso_Caida (es_suave)` | Intenta descender 1 fila. Si está libre, incrementa `Pieza_Fila` (sumando puntos si `es_suave = 1`); si hay colisión debajo, reproduce `Sonido_Caida` y llama a `Fijar_Y_Procesar_Pieza`. |
-| `Caida_Instantanea` | Suma `(Fila_Fantasma - Pieza_Fila) * 2 * Multiplicador_Caos` a `Puntuacion`, traslada la pieza a `Fila_Fantasma` y la fija inmediatamente. |
-| `Guardar_Hold` | Si `Puede_Guardar == 1`, guarda `Pieza_Actual` en `Pieza_Guardada` (o las intercambia si ya había una guardada), reposiciona en `(col=5, fila=2)` y bloquea `Puede_Guardar = 0` hasta el siguiente turno. |
-| `Fijar_Y_Procesar_Pieza` | Escribe los 4 bloques de la pieza activa en `Tablero`, invoca `Revisar_Y_Eliminar_Lineas`, y si la partida sigue en `"JUGANDO"`, invoca `Generar_Nueva_Pieza` y `Renderizar_Todo`. |
-| `Revisar_Y_Eliminar_Lineas` | Escanea de la fila 20 a la 1. Cada vez que detecta una fila sin ceros, incrementa `Lineas_Turno`, desplaza todas las filas superiores una posición hacia abajo sin decrementar el puntero de fila actual (para capturar líneas múltiples consecutivas), limpia la fila 1 y calcula puntos, combos, nivel y condición de victoria en `SPRINT 40L`. |
-| `Actualizar_Velocidad_Y_Caos` | Ajusta `Velocidad_Caida` según `Dificultad`, `Modo_Juego`, `Nivel` y `Evento_Caos`, aplicando siempre un tope mínimo de `0.06 s`. |
-| `Iniciar_Partida` | Reinicia las 200 celdas de `Tablero` a `0`, vacía y rellena `Bolsa_7`, restablece contadores (`Puntuacion`, `Nivel`, `Lineas`, `Combo`, `Pieza_Guardada`) y arranca la partida limpia. |
-| `Renderizar_Todo` | Borra el lienzo Lápiz y estampa los bloques del tablero, la pieza fantasma, la pieza activa y las vistas previas `NEXT` y `HOLD`. |
+## Geometría y presentación
 
-## 4. Cómo Modificar o Ampliar el Juego
+Tablero 10x20, índice (fila - 1)*10 + columna, siete tetrominós, cuatro rotaciones y seis candidatos de wall kick. Se mantiene la geometría original, ghost, hold, NEXT, combos, líneas y sonidos. Puntuación de 1/2/3/4 líneas: 100/300/500/800 por nivel, más combo; soft/hard drop suman 1/2 puntos por fila.
 
-* **Cambiar colores de las piezas**: Abre el objeto `Motor_Juego`, entra en la pestaña **Disfraces** y edita los disfraces `Bloque_1_I` a `Bloque_7_L`.
-* **Ajustar velocidades de caída**: En `Motor_Juego`, localiza el bloque `definir Actualizar_Velocidad_Y_Caos` y modifica los valores de `Velocidad_Base` (`0.85`, `0.60`, `0.38`, `0.22`).
-* **Añadir nuevos eventos a Chaos Mode**: En el bucle principal `al hacer clic en bandera verde` de `Motor_Juego`, amplía el bloque condicional que selecciona `Evento_Caos` cada 15 segundos y añade su efecto en `Actualizar_Velocidad_Y_Caos` o `Revisar_Y_Eliminar_Lineas`.
+El tablero ocupa 150x300 de los 480x360 px. Etiquetas y paneles están en inglés; los identificadores internos conservan nombres españoles. El HUD estampa SVG sin monitores. Los paneles no contienen botones ni eventos de click.
+
+El ZIP SB3 tiene timestamps fijos y orden estable: la misma fuente produce bytes reproducibles. validate_sb3.py comprueba hashes, formatos y enlaces; test_runtime.cjs ejecuta el planificador oficial sin emular la física.

@@ -1,0 +1,6 @@
+{
+  "name": "nexus-blocks-validation",
+  "private": true,
+  "scripts": {"test": "node tools/test_runtime.cjs"},
+  "devDependencies": {"scratch-vm": "5.0.300", "scratch-storage": "6.2.1"}
+}

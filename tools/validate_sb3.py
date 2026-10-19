@@ -6,9 +6,9 @@ para NEXUS-BLOCKS-ENDLESS.sb3.
 
 Ejecuta dos niveles de verificación:
 1. Validación estructural del archivo .sb3 (ZIP, MD5, XML SVG, PCM WAV,
-   esquema de project.json, enlaces padre/hijo de los 1052 bloques y opcodes).
+   esquema de project.json, enlaces padre/hijo de los bloques y opcodes).
 2. Intérprete de máquina virtual Scratch 3 (AST VM) que ejecuta directamente
-   los bloques de `project.json` para verificar las 11 pruebas obligatorias.
+   los bloques de `project.json` para verificar mecánicas y regresiones.
 """
 
 import hashlib
@@ -570,52 +570,60 @@ def run_all_tests(sb3_path: str) -> List[str]:
         "[PASS] Prueba 8 (Pausa y Reanudación): Estado PAUSA bloquea entradas y detiene caída; reanudación restaura el control."
     )
 
-    seen_diffs = []
-    for _ in range(4):
-        vm.trigger_broadcast("Cambiar_Dificultad")
-        seen_diffs.append((vm.vars["Dificultad"], vm.vars["Velocidad_Base"]))
-    diff_dict = dict(seen_diffs)
-    assert set(diff_dict.keys()) == {"Fácil", "Normal", "Difícil", "Pesadilla"}
-    assert diff_dict["Fácil"] > diff_dict["Normal"] > diff_dict["Difícil"] > diff_dict["Pesadilla"]
-
-    seen_modes = []
-    for _ in range(4):
-        vm.trigger_broadcast("Cambiar_Modo")
-        seen_modes.append(vm.vars["Modo_Juego"])
-    assert set(seen_modes) == {"ENDLESS CLASSIC", "RELAX", "CHAOS MODE", "SPRINT 40L"}
-
-    vm.vars["Modo_Juego"] = "ENDLESS CLASSIC"
-    vm.vars["Dificultad"] = "Pesadilla"
-    vm.vars["Nivel"] = 50
-    vm.call_proc("Actualizar_Velocidad_Y_Caos")
-    assert vm.vars["Velocidad_Caida"] >= 0.06
-
-    vm.vars["Modo_Juego"] = "SPRINT 40L"
+    for mode,base in [("NORMAL",0.65),("HARD",0.30),("CHAOS",0.23)]:
+        vm.vars["Modo_Juego"]=mode
+        vm.call_proc("Iniciar_Partida")
+        assert abs(vm.vars["Velocidad_Caida"]-base)<1e-9
+        vm.vars["Nivel"]=10
+        vm.call_proc("Actualizar_Velocidad_Y_Caos")
+        assert 0.07 <= vm.vars["Velocidad_Caida"] < base
+    report.append("[PASS] Tres modos: 0.65 / 0.30 / 0.23 s, aceleración y piso de 0.07 s.")
+    vm.vars["Modo_Juego"]="NORMAL"
     vm.call_proc("Iniciar_Partida")
-    vm.vars["Lineas"] = 39
-    for c in range(1, 11):
-        vm.lists["Tablero"][(20 - 1) * 10 + (c - 1)] = 4
-    vm.call_proc("Revisar_Y_Eliminar_Lineas")
-    assert vm.vars["Lineas"] == 40 and vm.vars["Estado_Juego"] == "VICTORIA"
-    report.append(
-        "[PASS] Prueba 9 (Dificultades y Modos): 4 dificultades (0.85s a 0.22s), límite técnico >=0.06s, CHAOS MODE y victoria en SPRINT 40L verificados."
-    )
-
-    vm.vars["Modo_Juego"] = "ENDLESS CLASSIC"
-    vm.vars["Dificultad"] = "Normal"
+    # Ejecutar el mismo Tick que invoca el hilo principal, con tiempo simulado.
+    for n in range(1,1201):
+        vm.sim_timer=n/60
+        vm.call_proc("Tick")
+    assert sum(int(x)>0 for x in vm.lists["Tablero"])>=4
+    assert vm.vars["Pieza_Fila"]>=3
+    report.append("[PASS] 20 segundos inactivos: caída, fijación y siguiente pieza.")
     vm.call_proc("Iniciar_Partida")
+    vm.vars["Pieza_Fila"]=10
+    vm.call_proc("Garbage_Attack")
+    assert vm.vars["Pieza_Fila"]==10
+    assert sum(int(x)==0 for x in vm.lists["Tablero"][-10:])==1
+    vm.call_proc("Comprobar_Colision %s %s %s %s",vm.vars["Pieza_Actual"],vm.vars["Pieza_Col"],vm.vars["Pieza_Fila"],vm.vars["Pieza_Rotacion"])
+    assert vm.vars["Colision_Detectada"]==0
+    report.append("[PASS] Garbage: 9 obstáculos, un hueco y pieza activa sin colisión.")
+    # Garbage en la aparición no debe elevar una pieza que ya está libre.
+    vm.call_proc("Iniciar_Partida")
+    vm.call_proc("Garbage_Attack")
+    assert vm.vars["Estado_Juego"] == "JUGANDO" and vm.vars["Pieza_Fila"] == 2
+    # Una pieza apoyada se eleva exactamente una fila junto con la pila.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Pieza_Actual=2,Pieza_Col=5,Pieza_Fila=18,Pieza_Rotacion=0)
+    vm.lists["Tablero"][194]=3
+    vm.lists["Tablero"][195]=3
+    vm.call_proc("Garbage_Attack")
+    assert vm.vars["Pieza_Fila"] == 17 and vm.vars["Estado_Juego"] == "JUGANDO"
+    # Hold no puede colocar una pieza intercambiada dentro de una celda ocupada.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Pieza_Guardada=2,Pieza_Fila=10)
+    vm.lists["Tablero"][14]=3
+    vm.call_proc("Guardar_Hold")
+    assert vm.vars["Estado_Juego"] == "GAMEOVER"
+    report.append("[PASS] Garbage en spawn/superficie y top-out en hold intercambiado.")
     for _ in range(150):
-        for idx_clear in range(80):
-            vm.lists["Tablero"][idx_clear] = 0
-        for act in ("IZQ", "ROTAR", "DER", "BAJAR", "HOLD", "CAIDA"):
-            vm.vars["Accion_Tactil"] = act
-            vm.trigger_broadcast("Ejecutar_Accion")
-            if vm.vars["Estado_Juego"] != "JUGANDO":
-                vm.call_proc("Iniciar_Partida")
-    assert len(vm.stamps_log) >= 12
-    report.append(
-        f"[PASS] Prueba 10 y 11 (Partida prolongada + Controles táctiles): 150 ciclos de juego y despacho táctil ejecutados sin fugas de estado ({len(vm.stamps_log)} sellos Pen activos en el frame actual)."
-    )
+        vm.call_proc("Iniciar_Partida")
+        vm.call_proc("Mover_Horizontal %s",-1)
+        vm.call_proc("Rotar_Pieza")
+        vm.call_proc("Guardar_Hold")
+        vm.call_proc("Paso_Caida %s",1)
+        vm.call_proc("Caida_Instantanea")
+    report.append("[PASS] 150 ciclos de movimiento, giro, hold y drop.")
+    assert len(proj["targets"])==4 and not proj["monitors"]
+    assert all(b["opcode"] not in {"event_whenthisspriteclicked","event_whenkeypressed","sensing_mousedown","sensing_touchingobject"} for t in proj["targets"] for b in t["blocks"].values())
+    report.append("[PASS] Sin sprites táctiles, eventos de click ni monitores.")
 
     return report
 

@@ -1,0 +1,24 @@
+{
+  "pass": true,
+  "results": {
+    "NORMAL": {
+      "configured": 0.65,
+      "observedMedian": 0.669,
+      "locks": 1,
+      "wallSeconds": 20.1
+    },
+    "HARD": {
+      "configured": 0.3,
+      "observedMedian": 0.318,
+      "locks": 3,
+      "wallSeconds": 20.1
+    },
+    "CHAOS": {
+      "configured": 0.23,
+      "observedMedian": 0.247,
+      "locks": 6,
+      "wallSeconds": 20.1
+    }
+  },
+  "interaction": "pause/resume, arrows, rotate, hold, hard/soft drop, restart, modes, chaos events, garbage"
+}

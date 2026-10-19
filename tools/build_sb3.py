@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Generador programático del proyecto Scratch 3: NEXUS BLOCKS: ENDLESS (.sb3)
+Generador programático del proyecto Scratch 3: NEXUS BLOCKS (.sb3)
 Construye un archivo .sb3 100% compatible con el editor oficial de Scratch 3,
 incluyendo activos vectoriales SVG originales, efectos de sonido WAV sintetizados
-y toda la arquitectura de bloques para iPad (controles táctiles) y teclado.
+y toda la arquitectura de bloques para teclado físico, incluido iPad.
 """
 
 import hashlib
@@ -91,12 +91,6 @@ def build_sound_assets() -> Dict[str, Dict[str, Any]]:
             (349.23, 0.14, "triangle"),
             (261.63, 0.28, "sweep_down"),
         ],
-        "Sonido_Victoria": [
-            (523.25, 0.08, "triangle"),
-            (659.25, 0.08, "triangle"),
-            (783.99, 0.08, "triangle"),
-            (1046.50, 0.22, "sine"),
-        ],
     }
     assets: Dict[str, Dict[str, Any]] = {}
     for name, notes in specs.items():
@@ -134,69 +128,12 @@ def register_svg_asset(name: str, svg_text: str, rot_x: float, rot_y: float) -> 
     }
 
 
-def make_stage_backdrop_svg(border_color: str = "#00F0FF", subtitle: str = "ARCADE EDITION") -> str:
-    """
-    Escenario 480x360.
-    El centro de Scratch (0,0) corresponde a SVG (240, 180).
-    Tablero de 10x20 celdas de 15x15 px:
-      Scratch X: -75 a +75  -> SVG X: 165 a 315 (ancho 150)
-      Scratch Y: -150 a +150 -> SVG Y: 30 a 330 (alto 300)
-    Caja HOLD (izquierda arriba):
-      Scratch X: -160 (SVG X: 80), Scratch Y: +98 (SVG Y: 82)
-    Caja NEXT (derecha arriba):
-      Scratch X: +160 (SVG X: 400), Scratch Y: +98 (SVG Y: 82)
-    """
-    grid_lines = []
-    for c in range(1, 10):
-        x = 165 + c * 15
-        grid_lines.append(
-            f'<line x1="{x}" y1="30" x2="{x}" y2="330" stroke="#162238" stroke-width="1"/>'
-        )
-    for r in range(1, 20):
-        y = 30 + r * 15
-        grid_lines.append(
-            f'<line x1="165" y1="{y}" x2="315" y2="{y}" stroke="#162238" stroke-width="1"/>'
-        )
-    grid_svg = "\n    ".join(grid_lines)
-
-    return f"""<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#060A12"/>
-      <stop offset="50%" stop-color="#0B1324"/>
-      <stop offset="100%" stop-color="#070B16"/>
-    </linearGradient>
-  </defs>
-  <rect x="0" y="0" width="480" height="360" fill="url(#bgGrad)"/>
-
-  <!-- Decoracion sutil de fondo -->
-  <rect x="6" y="6" width="468" height="348" rx="10" fill="none" stroke="#14233C" stroke-width="1.5"/>
-
-  <!-- Cabecera superior central -->
-  <rect x="155" y="4" width="170" height="22" rx="5" fill="#0D192E" stroke="{border_color}" stroke-width="1.2"/>
-  <text x="240" y="18" font-family="sans-serif" font-size="11" font-weight="bold" fill="#FFFFFF" text-anchor="middle">NEXUS BLOCKS</text>
-
-  <!-- Marco del Tablero 10x20 (SVG X: 165..315, Y: 30..330) -->
-  <rect x="163" y="28" width="154" height="304" rx="3" fill="#050811" stroke="{border_color}" stroke-width="2.5"/>
-  <g>
-    {grid_svg}
-  </g>
-
-  <!-- Panel HOLD (Izquierda: centro SVG X=80, Y=92 -> Scratch X=-160, Y=88) -->
-  <rect x="32" y="48" width="96" height="76" rx="8" fill="#0B1528" stroke="#00F0FF" stroke-width="1.8"/>
-  <rect x="32" y="48" width="96" height="18" rx="6" fill="#00F0FF"/>
-  <text x="80" y="61" font-family="sans-serif" font-size="10" font-weight="bold" fill="#050A14" text-anchor="middle">HOLD (RESERVA)</text>
-
-  <!-- Panel NEXT (Derecha: centro SVG X=400, Y=92 -> Scratch X=+160, Y=88) -->
-  <rect x="352" y="48" width="96" height="76" rx="8" fill="#0B1528" stroke="#B829FF" stroke-width="1.8"/>
-  <rect x="352" y="48" width="96" height="18" rx="6" fill="#B829FF"/>
-  <text x="400" y="61" font-family="sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF" text-anchor="middle">NEXT (SIGUIENTE)</text>
-
-  <!-- Etiquetas de zonas tactiles para iPad -->
-  <text x="80" y="180" font-family="sans-serif" font-size="9" font-weight="bold" fill="#6488B8" text-anchor="middle">CONTROL TÁCTIL IZQ.</text>
-  <text x="400" y="180" font-family="sans-serif" font-size="9" font-weight="bold" fill="#6488B8" text-anchor="middle">CONTROL TÁCTIL DER.</text>
-  <text x="240" y="355" font-family="sans-serif" font-size="8" fill="#52739E" text-anchor="middle">{subtitle}</text>
-</svg>"""
+def make_stage_backdrop_svg(border_color="#31435A", subtitle="KEYBOARD ARCADE"):
+    grid = ''.join(f'<path d="M{165+c*15} 30V330" stroke="#152033"/>' for c in range(1,10))
+    grid += ''.join(f'<path d="M165 {30+r*15}H315" stroke="#152033"/>' for r in range(1,20))
+    labels = [(80,60,"HOLD"),(80,160,"SCORE"),(400,60,"NEXT"),(400,160,"LEVEL"),(400,218,"LINES"),(400,276,"MODE")]
+    text = ''.join(f'<text x="{x}" y="{y}" text-anchor="middle" fill="#8B9CB5" font-family="sans-serif" font-size="10" letter-spacing="2">{t}</text>' for x,y,t in labels)
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#090F1B"/><rect x="163" y="28" width="154" height="304" rx="2" fill="#070B13" stroke="{border_color}"/>{grid}{text}<text x="240" y="18" text-anchor="middle" fill="#DDE7F5" font-family="sans-serif" font-size="11" letter-spacing="3">NEXUS BLOCKS</text><text x="240" y="350" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">ARROWS MOVE / ROTATE · SPACE DROP · C HOLD · P PAUSE · R RESTART</text></svg>'''
 
 
 def make_block_svg(fill_hex: str, highlight_hex: str, border_hex: str, size: int = 15) -> str:
@@ -216,46 +153,15 @@ def make_ghost_block_svg(size: int = 15) -> str:
 </svg>"""
 
 
-def make_button_svg(
-    width: int,
-    height: int,
-    bg_hex: str,
-    stroke_hex: str,
-    label_top: str,
-    label_sub: str = "",
-    text_hex: str = "#FFFFFF",
-) -> str:
-    """Crea un botón táctil grande y legible para iPad."""
-    cx = width / 2.0
-    if label_sub:
-        t1_y = height * 0.44
-        t2_y = height * 0.76
-        sub_el = f'<text x="{cx}" y="{t2_y:.1f}" font-family="sans-serif" font-size="9.5" font-weight="bold" fill="{stroke_hex}" text-anchor="middle">{label_sub}</text>'
+
+def make_modal_svg(title, line1, line2, line3, accent_hex):
+    """Panel de estado informativo sin controles táctiles."""
+    if title == "NEXUS BLOCKS":
+        lines = [(61,"1 — NORMAL"),(82,"2 — HARD"),(103,"3 — CHAOS"),(140,"PRESS ENTER TO START")]
     else:
-        t1_y = height * 0.60
-        sub_el = ""
-
-    return f"""<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
-  <rect x="1.5" y="1.5" width="{width - 3}" height="{height - 3}" rx="8" fill="{bg_hex}" stroke="{stroke_hex}" stroke-width="2"/>
-  <rect x="4" y="3.5" width="{width - 8}" height="{height * 0.35:.1f}" rx="5" fill="#FFFFFF" fill-opacity="0.08"/>
-  <text x="{cx}" y="{t1_y:.1f}" font-family="sans-serif" font-size="12.5" font-weight="bold" fill="{text_hex}" text-anchor="middle">{label_top}</text>
-  {sub_el}
-</svg>"""
-
-
-def make_modal_svg(title: str, line1: str, line2: str, line3: str, accent_hex: str) -> str:
-    """Crea un cartel superpuesto para Menú Principal, Pausa, Game Over y Victoria."""
-    w, h = 236, 168
-    cx = w / 2.0
-    return f"""<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">
-  <rect x="3" y="3" width="{w - 6}" height="{h - 6}" rx="12" fill="#070E1C" fill-opacity="0.95" stroke="{accent_hex}" stroke-width="3"/>
-  <rect x="12" y="12" width="{w - 24}" height="32" rx="7" fill="{accent_hex}"/>
-  <text x="{cx}" y="33" font-family="sans-serif" font-size="14" font-weight="bold" fill="#060A12" text-anchor="middle">{title}</text>
-  <text x="{cx}" y="68" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">{line1}</text>
-  <text x="{cx}" y="92" font-family="sans-serif" font-size="10.5" fill="#B0C7E6" text-anchor="middle">{line2}</text>
-  <rect x="28" y="114" width="{w - 56}" height="34" rx="8" fill="#102342" stroke="{accent_hex}" stroke-width="1.8"/>
-  <text x="{cx}" y="135" font-family="sans-serif" font-size="12" font-weight="bold" fill="{accent_hex}" text-anchor="middle">{line3}</text>
-</svg>"""
+        lines = [(68,line1),(94,line2),(135,line3)]
+    texts = ''.join(f'<text x="118" y="{y}" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#CFDBEA">{t}</text>' for y,t in lines)
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="236" height="168"><rect x="1" y="1" width="234" height="166" rx="6" fill="#0B1320" stroke="#34455E"/><text x="118" y="31" text-anchor="middle" font-family="sans-serif" font-size="16" letter-spacing="1" fill="{accent_hex}">{title}</text>{texts}</svg>'''
 
 
 def make_line_fx_svg(label: str, color_hex: str) -> str:
@@ -378,20 +284,6 @@ class ScratchBlockBuilder:
 
     def expr_timer(self) -> str:
         return self.add_block("sensing_timer")
-
-    def expr_mousedown(self) -> str:
-        return self.add_block("sensing_mousedown")
-
-    def expr_touching_mouse(self) -> str:
-        b = self.add_block("sensing_touchingobject")
-        menu = self.add_block(
-            "sensing_touchingobjectmenu",
-            fields={"TOUCHINGOBJECTMENU": ["_mouse_", None]},
-            shadow=True,
-        )
-        self.blocks[menu]["parent"] = b
-        self.blocks[b]["inputs"]["TOUCHINGOBJECTMENU"] = [1, menu]
-        return b
 
     def expr_key_pressed(self, key_name: str) -> str:
         b = self.add_block("sensing_keypressed")
@@ -706,28 +598,6 @@ class ScratchBlockBuilder:
             self.blocks[first]["parent"] = hat
         return hat
 
-    def hat_sprite_clicked(self, body_stmts: List[str], x: int = 40, y: int = 40) -> str:
-        hat = self.add_block("event_whenthisspriteclicked", top_level=True, x=x, y=y)
-        first = self.chain(body_stmts)
-        if first:
-            self.blocks[hat]["next"] = first
-            self.blocks[first]["parent"] = hat
-        return hat
-
-    def hat_key_pressed(self, key_name: str, body_stmts: List[str], x: int = 40, y: int = 40) -> str:
-        hat = self.add_block(
-            "event_whenkeypressed",
-            fields={"KEY_OPTION": [key_name, None]},
-            top_level=True,
-            x=x,
-            y=y,
-        )
-        first = self.chain(body_stmts)
-        if first:
-            self.blocks[hat]["next"] = first
-            self.blocks[first]["parent"] = hat
-        return hat
-
     def define_proc(
         self,
         proccode: str,
@@ -876,8 +746,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
 
     var_specs = {
         "Estado_Juego": ("var_estado", "MENU"),
-        "Modo_Juego": ("var_modo", "ENDLESS CLASSIC"),
-        "Dificultad": ("var_dificultad", "Normal"),
+        "Modo_Juego": ("var_modo", "NORMAL"),
+
         "Puntuacion": ("var_puntuacion", 0),
         "Nivel": ("var_nivel", 1),
         "Lineas": ("var_lineas", 0),
@@ -896,12 +766,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "Rotacion_Exito": ("var_rot_exito", 0),
         "Lineas_Turno": ("var_lineas_turno", 0),
         "Multiplicador_Caos": ("var_mult_caos", 1),
-        "Evento_Caos": ("var_evento_caos", "NINGUNO"),
+        "Evento_Caos": ("var_evento_caos", "NONE"),
         "Reloj_Caida": ("var_reloj_caida", 0),
-        "Reloj_Caos": ("var_reloj_caos", 0),
-        "Inicio_Sprint": ("var_inicio_sprint", 0),
-        "Tiempo_Sprint": ("var_tiempo_sprint", 0.0),
-        "Accion_Tactil": ("var_accion_tactil", ""),
+
+
         "idx": ("var_idx", 1),
         "f": ("var_f", 1),
         "c": ("var_c", 1),
@@ -923,6 +791,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "puntos_base": ("var_puntos_base", 0),
     }
 
+    for name, value in {"Tiempo_Juego":0, "Ultimo_Tick":0, "Delta":0, "Bloqueo":-1,
+                        "Evento_Fin":0, "Proximo_Evento":12, "Proximo_Ataque":25,
+                        "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0}.items():
+        var_specs[name] = ("v2_"+name, value)
+    for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "enter"]:
+        var_specs["key_"+key] = ("v2_key_"+key, 0)
+        var_specs["repeat_"+key] = ("v2_repeat_"+key, 0)
     var_map = {k: v[0] for k, v in var_specs.items()}
     stage_variables = {v[0]: [k, v[1]] for k, v in var_specs.items()}
 
@@ -940,9 +815,6 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     bcast_specs = {
         "Iniciar_Juego": "bcast_iniciar_juego",
         "Actualizar_UI": "bcast_actualizar_ui",
-        "Ejecutar_Accion": "bcast_ejecutar_accion",
-        "Cambiar_Modo": "bcast_cambiar_modo",
-        "Cambiar_Dificultad": "bcast_cambiar_dificultad",
         "Alternar_Pausa": "bcast_alternar_pausa",
         "Animar_Linea": "bcast_animar_linea",
     }
@@ -957,13 +829,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     # --------------------------------------------------------------------------
     bg_normal = register_svg_asset(
         "Fondo_Arcade",
-        make_stage_backdrop_svg("#00F0FF", "NEXUS BLOCKS: ENDLESS • IPAD Y TECLADO"),
+        make_stage_backdrop_svg("#31435A", "NEXUS BLOCKS • IPAD Y TECLADO"),
         240,
         180,
     )
     bg_chaos = register_svg_asset(
         "Fondo_Caos",
-        make_stage_backdrop_svg("#FF2A85", "CHAOS MODE • EVENTO ESPECIAL ACTIVO"),
+        make_stage_backdrop_svg("#774254", "CHAOS MODE • EVENTO ESPECIAL ACTIVO"),
         240,
         180,
     )
@@ -975,7 +847,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "Actualizar_UI",
         [
             stage_b.stmt_if_else(
-                stage_b.op_eq("$v:Modo_Juego", "CHAOS MODE"),
+                stage_b.op_eq("$v:Modo_Juego", "CHAOS"),
                 [stage_b.stmt_switch_backdrop("Fondo_Caos")],
                 [stage_b.stmt_switch_backdrop("Fondo_Arcade")],
             )
@@ -1032,6 +904,12 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         all_zip_files[casset["md5ext"]] = casset["bytes"]
         motor_costumes.append({k: v for k, v in casset.items() if k != "bytes"})
 
+    # HUD vectorial: cifras y estados estampados, sin monitores de variables.
+    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING"]:
+        asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{label}</text></svg>',65,12)
+        all_zip_files[asset["md5ext"]]=asset["bytes"]
+        motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
+
     motor_sounds = [
         {k: v for k, v in sound_assets[sname].items() if k != "bytes"}
         for sname in (
@@ -1042,7 +920,6 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             "Sonido_Hold",
             "Sonido_Caos",
             "Sonido_GameOver",
-            "Sonido_Victoria",
         )
     ]
 
@@ -1195,77 +1072,26 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         y=980,
     )
 
-    # --- PROCEDIMIENTO 5: Actualizar_Velocidad_Y_Caos ---
+    # Velocidad única, progresiva y limitada a 70 ms.
     proc_vel_code = "Actualizar_Velocidad_Y_Caos"
-    mb.define_proc(
-        proc_vel_code,
-        [],
-        [],
-        True,
-        [
-            mb.stmt_if_else(
-                mb.op_eq("$v:Dificultad", "Fácil"),
-                [mb.stmt_set_var("Velocidad_Base", 0.85)],
-                [
-                    mb.stmt_if_else(
-                        mb.op_eq("$v:Dificultad", "Normal"),
-                        [mb.stmt_set_var("Velocidad_Base", 0.60)],
-                        [
-                            mb.stmt_if_else(
-                                mb.op_eq("$v:Dificultad", "Difícil"),
-                                [mb.stmt_set_var("Velocidad_Base", 0.38)],
-                                [mb.stmt_set_var("Velocidad_Base", 0.22)],
-                            )
-                        ],
-                    )
-                ],
-            ),
-            mb.stmt_if(
-                mb.op_eq("$v:Modo_Juego", "RELAX"),
-                [mb.stmt_set_var("Velocidad_Base", 0.95)],
-            ),
-            mb.stmt_if_else(
-                mb.op_eq("$v:Modo_Juego", "RELAX"),
-                [
-                    mb.stmt_set_var(
-                        "Velocidad_Caida",
-                        mb.op_sub("$v:Velocidad_Base", mb.op_mul(mb.op_sub("$v:Nivel", 1), 0.015)),
-                    )
-                ],
-                [
-                    mb.stmt_set_var(
-                        "Velocidad_Caida",
-                        mb.op_sub("$v:Velocidad_Base", mb.op_mul(mb.op_sub("$v:Nivel", 1), 0.035)),
-                    )
-                ],
-            ),
-            mb.stmt_set_var("Multiplicador_Caos", 1),
-            mb.stmt_if(
-                mb.op_eq("$v:Modo_Juego", "CHAOS MODE"),
-                [
-                    mb.stmt_if(
-                        mb.op_eq("$v:Evento_Caos", "TURBO x2 PUNTOS"),
-                        [
-                            mb.stmt_set_var("Multiplicador_Caos", 2),
-                            mb.stmt_set_var("Velocidad_Caida", mb.op_mul("$v:Velocidad_Caida", 0.72)),
-                        ],
-                    ),
-                    mb.stmt_if(
-                        mb.op_eq("$v:Evento_Caos", "GRAVEDAD LUNAR"),
-                        [
-                            mb.stmt_set_var("Velocidad_Caida", mb.op_mul("$v:Velocidad_Caida", 1.35)),
-                        ],
-                    ),
-                ],
-            ),
-            mb.stmt_if(
-                mb.op_lt("$v:Velocidad_Caida", 0.06),
-                [mb.stmt_set_var("Velocidad_Caida", 0.06)],
-            ),
-        ],
-        x=40,
-        y=1320,
-    )
+    mb.define_proc(proc_vel_code, [], [], True, [
+        mb.stmt_set_var("Velocidad_Base", 0.65),
+        mb.stmt_set_var("Delta", 0.045),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "HARD"), [mb.stmt_set_var("Velocidad_Base",0.30),mb.stmt_set_var("Delta",0.055)]),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "CHAOS"), [mb.stmt_set_var("Velocidad_Base",0.23),mb.stmt_set_var("Delta",0.04)]),
+        mb.stmt_set_var("Velocidad_Caida", mb.op_div("$v:Velocidad_Base",mb.op_add(1,mb.op_mul(mb.op_sub("$v:Nivel",1),"$v:Delta")))),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "CHAOS"), [
+            mb.stmt_set_var("Velocidad_Caida",mb.op_div("$v:Velocidad_Caida",mb.op_add(1,mb.op_div("$v:Tiempo_Juego",180)))),
+            mb.stmt_if(mb.op_eq("$v:Evento_Caos","SPEED BURST"),[mb.stmt_set_var("Velocidad_Caida",mb.op_mul("$v:Velocidad_Caida",0.5))])]),
+        mb.stmt_if(mb.op_lt("$v:Velocidad_Caida",0.07),[mb.stmt_set_var("Velocidad_Caida",0.07)])])
+
+    mb.define_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["n","x","y"],True,[
+        mb.stmt_set_var("hud_num","$a:n"),mb.stmt_set_var("hud_pos","$a:x"),
+        mb.stmt_repeat_until(mb.op_lt("$v:hud_num",10),[
+            mb.stmt_switch_costume(mb.op_join("HUD_",mb.op_mod("$v:hud_num",10))),
+            mb.stmt_goto_xy("$v:hud_pos","$a:y"),mb.stmt_pen_stamp(),
+            mb.stmt_set_var("hud_num",mb.op_math("floor",mb.op_div("$v:hud_num",10))),mb.stmt_change_var("hud_pos",-11)]),
+        mb.stmt_switch_costume(mb.op_join("HUD_","$v:hud_num")),mb.stmt_goto_xy("$v:hud_pos","$a:y"),mb.stmt_pen_stamp()])
 
     # --- PROCEDIMIENTO 6: Renderizar_Todo (Run without screen refresh) ---
     proc_render_code = "Renderizar_Todo"
@@ -1412,6 +1238,12 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_set_size(100),
                 ],
             ),
+            mb.stmt_set_size(100),
+            mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Puntuacion",-140,0],True),
+            mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Nivel",165,0],True),
+            mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Lineas",165,-58],True),
+            mb.stmt_switch_costume(mb.op_join("HUD_","$v:Modo_Juego")),mb.stmt_goto_xy(160,-116),mb.stmt_pen_stamp(),
+            mb.stmt_if(mb.op_not(mb.op_eq("$v:Evento_Caos","NONE")),[mb.stmt_switch_costume(mb.op_join("HUD_","$v:Evento_Caos")),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
             mb.stmt_hide(),
         ],
         x=560,
@@ -1428,11 +1260,14 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         [
             mb.stmt_set_var("Pieza_Actual", "$v:Siguiente_Pieza"),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
+            mb.stmt_if(mb.op_eq("$v:Evento_Caos","DIFFICULT PIECES"),[
+                mb.stmt_if(mb.op_lt(mb.op_random(1,100),66),[mb.stmt_set_var("temp_pieza",mb.op_random(4,5))])]),
             mb.stmt_set_var("Siguiente_Pieza", "$v:temp_pieza"),
             mb.stmt_set_var("Pieza_Col", 5),
             mb.stmt_set_var("Pieza_Fila", 2),
             mb.stmt_set_var("Pieza_Rotacion", 0),
             mb.stmt_set_var("Puede_Guardar", 1),
+            mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(
                 proc_col_code,
                 proc_col_args,
@@ -1448,7 +1283,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 ],
                 [
                     mb.stmt_call_proc(proc_ghost_code, [], [], True),
-                    mb.stmt_set_var("Reloj_Caida", "$b:" + mb.expr_timer()),
+                    mb.stmt_set_var("Reloj_Caida", "$v:Tiempo_Juego"),
                 ],
             ),
         ],
@@ -1574,26 +1409,6 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                                 "Puntuacion",
                                 mb.op_mul(mb.op_mul(50, "$v:Combo"), "$v:Nivel"),
                             )
-                        ],
-                    ),
-                    mb.stmt_if(
-                        mb.op_eq("$v:Evento_Caos", "BONO LINEA +500"),
-                        [mb.stmt_change_var("Puntuacion", 500)],
-                    ),
-                    mb.stmt_set_var(
-                        "Nivel",
-                        mb.op_add(1, mb.op_math("floor", mb.op_div("$v:Lineas", 10))),
-                    ),
-                    mb.stmt_call_proc(proc_vel_code, [], [], True),
-                    mb.stmt_if(
-                        mb.op_and(
-                            mb.op_eq("$v:Modo_Juego", "SPRINT 40L"),
-                            mb.op_gt("$v:Lineas", 39),
-                        ),
-                        [
-                            mb.stmt_set_var("Estado_Juego", "VICTORIA"),
-                            mb.stmt_play_sound("Sonido_Victoria"),
-                            mb.stmt_broadcast("Actualizar_UI"),
                         ],
                     ),
                 ],
@@ -1788,12 +1603,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                                 mb.op_eq("$a:es_suave", 1),
                                 [mb.stmt_change_var("Puntuacion", "$v:Multiplicador_Caos")],
                             ),
-                            mb.stmt_set_var("Reloj_Caida", "$b:" + mb.expr_timer()),
+                            mb.stmt_set_var("Reloj_Caida", "$v:Tiempo_Juego"),
                             mb.stmt_call_proc(proc_render_code, [], [], True),
                         ],
                         [
-                            mb.stmt_play_sound("Sonido_Caida"),
-                            mb.stmt_call_proc(proc_lock_code, [], [], True),
+                            mb.stmt_if(mb.op_lt("$v:Bloqueo",0),[mb.stmt_set_var("Bloqueo","$v:Tiempo_Juego")]),
                         ],
                     ),
                 ],
@@ -1852,6 +1666,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                             mb.stmt_set_var("Pieza_Guardada", "$v:Pieza_Actual"),
                             mb.stmt_call_proc(proc_spawn_code, [], [], True),
                             mb.stmt_set_var("Puede_Guardar", 0),
+                            mb.stmt_set_var("Bloqueo", -1),
                         ],
                         [
                             mb.stmt_set_var("temp_pieza", "$v:Pieza_Actual"),
@@ -1861,9 +1676,12 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                             mb.stmt_set_var("Pieza_Fila", 2),
                             mb.stmt_set_var("Pieza_Rotacion", 0),
                             mb.stmt_set_var("Puede_Guardar", 0),
+                            mb.stmt_set_var("Bloqueo", -1),
                             mb.stmt_call_proc(proc_ghost_code, [], [], True),
                         ],
                     ),
+                    mb.stmt_call_proc(proc_col_code,proc_col_args,["$v:Pieza_Actual","$v:Pieza_Col","$v:Pieza_Fila","$v:Pieza_Rotacion"],True),
+                    mb.stmt_if(mb.op_eq("$v:Colision_Detectada",1),[mb.stmt_set_var("Estado_Juego","GAMEOVER"),mb.stmt_play_sound("Sonido_GameOver"),mb.stmt_broadcast("Actualizar_UI")]),
                     mb.stmt_call_proc(proc_render_code, [], [], True),
                 ],
             )
@@ -1890,13 +1708,19 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Combo", -1),
             mb.stmt_set_var("Pieza_Guardada", 0),
             mb.stmt_set_var("Puede_Guardar", 1),
-            mb.stmt_set_var("Evento_Caos", "NINGUNO"),
+            mb.stmt_set_var("Evento_Caos", "NONE"),
             mb.stmt_set_var("Multiplicador_Caos", 1),
-            mb.stmt_set_var("Tiempo_Sprint", 0),
-            mb.stmt_set_var("Inicio_Sprint", "$b:" + mb.expr_timer()),
-            mb.stmt_set_var("Reloj_Caos", "$b:" + mb.expr_timer()),
+            mb.stmt_set_var("Tiempo_Juego", 0),
+            mb.stmt_set_var("Ultimo_Tick", "$b:" + mb.expr_timer()),
+            mb.stmt_set_var("Proximo_Evento", 12),
+            mb.stmt_set_var("Proximo_Ataque", 25),
+            mb.stmt_set_var("Evento_Fin", 0),
+            mb.stmt_set_var("Eventos", 0),
+            mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(proc_vel_code, [], [], True),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
+            mb.stmt_if(mb.op_eq("$v:Evento_Caos","DIFFICULT PIECES"),[
+                mb.stmt_if(mb.op_lt(mb.op_random(1,100),66),[mb.stmt_set_var("temp_pieza",mb.op_random(4,5))])]),
             mb.stmt_set_var("Siguiente_Pieza", "$v:temp_pieza"),
             mb.stmt_set_var("Estado_Juego", "JUGANDO"),
             mb.stmt_call_proc(proc_spawn_code, [], [], True),
@@ -1907,324 +1731,69 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         y=880,
     )
 
-    # --- SCRIPTS DE EVENTOS Y BUCLE PRINCIPAL EN MOTOR_JUEGO ---
-
-    mb.hat_green_flag(
-        [
-            mb.stmt_hide(),
-            mb.stmt_pen_clear(),
-            mb.stmt_set_var("Estado_Juego", "MENU"),
-            mb.stmt_set_var("Modo_Juego", "ENDLESS CLASSIC"),
-            mb.stmt_set_var("Dificultad", "Normal"),
-            mb.stmt_set_var("Puntuacion", 0),
-            mb.stmt_set_var("Nivel", 1),
-            mb.stmt_set_var("Lineas", 0),
-            mb.stmt_set_var("Evento_Caos", "NINGUNO"),
-            mb.stmt_broadcast("Actualizar_UI"),
-            mb.stmt_forever(
-                [
-                    mb.stmt_if(
-                        mb.op_eq("$v:Estado_Juego", "JUGANDO"),
-                        [
-                            mb.stmt_if(
-                                mb.op_eq("$v:Modo_Juego", "SPRINT 40L"),
-                                [
-                                    mb.stmt_set_var(
-                                        "Tiempo_Sprint",
-                                        mb.op_div(
-                                            mb.op_math(
-                                                "floor",
-                                                mb.op_mul(
-                                                    mb.op_sub("$b:" + mb.expr_timer(), "$v:Inicio_Sprint"),
-                                                    10,
-                                                ),
-                                            ),
-                                            10,
-                                        ),
-                                    )
-                                ],
-                            ),
-                            mb.stmt_if(
-                                mb.op_eq("$v:Modo_Juego", "CHAOS MODE"),
-                                [
-                                    mb.stmt_if(
-                                        mb.op_and(
-                                            mb.op_gt(
-                                                mb.op_sub("$b:" + mb.expr_timer(), "$v:Reloj_Caos"),
-                                                12,
-                                            ),
-                                            mb.op_lt(
-                                                mb.op_sub("$b:" + mb.expr_timer(), "$v:Reloj_Caos"),
-                                                15,
-                                            ),
-                                        ),
-                                        [
-                                            mb.stmt_set_var("Evento_Caos", "AVISO: EVENTO EN 3s"),
-                                        ],
-                                    ),
-                                    mb.stmt_if(
-                                        mb.op_gt(
-                                            mb.op_sub("$b:" + mb.expr_timer(), "$v:Reloj_Caos"),
-                                            15,
-                                        ),
-                                        [
-                                            mb.stmt_set_var("Reloj_Caos", "$b:" + mb.expr_timer()),
-                                            mb.stmt_play_sound("Sonido_Caos"),
-                                            mb.stmt_set_var("temp_azar", mb.op_random(1, 3)),
-                                            mb.stmt_if_else(
-                                                mb.op_eq("$v:temp_azar", 1),
-                                                [mb.stmt_set_var("Evento_Caos", "TURBO x2 PUNTOS")],
-                                                [
-                                                    mb.stmt_if_else(
-                                                        mb.op_eq("$v:temp_azar", 2),
-                                                        [mb.stmt_set_var("Evento_Caos", "GRAVEDAD LUNAR")],
-                                                        [mb.stmt_set_var("Evento_Caos", "BONO LINEA +500")],
-                                                    )
-                                                ],
-                                            ),
-                                            mb.stmt_call_proc(proc_vel_code, [], [], True),
-                                        ],
-                                    ),
-                                ],
-                            ),
-                            mb.stmt_if(
-                                mb.op_gt(
-                                    mb.op_sub("$b:" + mb.expr_timer(), "$v:Reloj_Caida"),
-                                    "$v:Velocidad_Caida",
-                                ),
-                                [mb.stmt_call_proc(proc_step_code, proc_step_args, [0], True)],
-                            ),
-                        ],
-                    )
-                ]
-            ),
-        ],
-        x=1620,
-        y=1380,
-    )
-
-    mb.hat_broadcast(
-        "Iniciar_Juego",
-        [mb.stmt_call_proc(proc_start_code, [], [], True)],
-        x=2120,
-        y=40,
-    )
-
-    mb.hat_broadcast(
-        "Ejecutar_Accion",
-        [
-            mb.stmt_if(
-                mb.op_eq("$v:Accion_Tactil", "IZQ"),
-                [mb.stmt_call_proc(proc_move_code, proc_move_args, [-1], True)],
-            ),
-            mb.stmt_if(
-                mb.op_eq("$v:Accion_Tactil", "DER"),
-                [mb.stmt_call_proc(proc_move_code, proc_move_args, [1], True)],
-            ),
-            mb.stmt_if(
-                mb.op_eq("$v:Accion_Tactil", "BAJAR"),
-                [mb.stmt_call_proc(proc_step_code, proc_step_args, [1], True)],
-            ),
-            mb.stmt_if(
-                mb.op_eq("$v:Accion_Tactil", "ROTAR"),
-                [mb.stmt_call_proc(proc_rot_code, [], [], True)],
-            ),
-            mb.stmt_if(
-                mb.op_eq("$v:Accion_Tactil", "CAIDA"),
-                [mb.stmt_call_proc(proc_hard_code, [], [], True)],
-            ),
-            mb.stmt_if(
-                mb.op_eq("$v:Accion_Tactil", "HOLD"),
-                [mb.stmt_call_proc(proc_hold_code, [], [], True)],
-            ),
-        ],
-        x=2120,
-        y=220,
-    )
-
-    mb.hat_broadcast(
-        "Alternar_Pausa",
-        [
-            mb.stmt_if_else(
-                mb.op_eq("$v:Estado_Juego", "JUGANDO"),
-                [
-                    mb.stmt_set_var("Estado_Juego", "PAUSA"),
-                    mb.stmt_broadcast("Actualizar_UI"),
-                ],
-                [
-                    mb.stmt_if(
-                        mb.op_eq("$v:Estado_Juego", "PAUSA"),
-                        [
-                            mb.stmt_set_var("Estado_Juego", "JUGANDO"),
-                            mb.stmt_set_var("Reloj_Caida", "$b:" + mb.expr_timer()),
-                            mb.stmt_broadcast("Actualizar_UI"),
-                            mb.stmt_call_proc(proc_render_code, [], [], True),
-                        ],
-                    )
-                ],
-            )
-        ],
-        x=2120,
-        y=620,
-    )
-
-    mb.hat_broadcast(
-        "Cambiar_Modo",
-        [
-            mb.stmt_if_else(
-                mb.op_eq("$v:Modo_Juego", "ENDLESS CLASSIC"),
-                [mb.stmt_set_var("Modo_Juego", "RELAX")],
-                [
-                    mb.stmt_if_else(
-                        mb.op_eq("$v:Modo_Juego", "RELAX"),
-                        [mb.stmt_set_var("Modo_Juego", "CHAOS MODE")],
-                        [
-                            mb.stmt_if_else(
-                                mb.op_eq("$v:Modo_Juego", "CHAOS MODE"),
-                                [mb.stmt_set_var("Modo_Juego", "SPRINT 40L")],
-                                [mb.stmt_set_var("Modo_Juego", "ENDLESS CLASSIC")],
-                            )
-                        ],
-                    )
-                ],
-            ),
-            mb.stmt_call_proc(proc_vel_code, [], [], True),
-            mb.stmt_broadcast("Actualizar_UI"),
-        ],
-        x=2120,
-        y=960,
-    )
-
-    mb.hat_broadcast(
-        "Cambiar_Dificultad",
-        [
-            mb.stmt_if_else(
-                mb.op_eq("$v:Dificultad", "Fácil"),
-                [mb.stmt_set_var("Dificultad", "Normal")],
-                [
-                    mb.stmt_if_else(
-                        mb.op_eq("$v:Dificultad", "Normal"),
-                        [mb.stmt_set_var("Dificultad", "Difícil")],
-                        [
-                            mb.stmt_if_else(
-                                mb.op_eq("$v:Dificultad", "Difícil"),
-                                [mb.stmt_set_var("Dificultad", "Pesadilla")],
-                                [mb.stmt_set_var("Dificultad", "Fácil")],
-                            )
-                        ],
-                    )
-                ],
-            ),
-            mb.stmt_call_proc(proc_vel_code, [], [], True),
-            mb.stmt_broadcast("Actualizar_UI"),
-        ],
-        x=2120,
-        y=1320,
-    )
-
-    mb.hat_key_pressed(
-        "left arrow",
-        [
-            mb.stmt_call_proc(proc_move_code, proc_move_args, [-1], True),
-            mb.stmt_wait(0.15),
-            mb.stmt_repeat_until(
-                mb.op_not(mb.expr_key_pressed("left arrow")),
-                [
-                    mb.stmt_call_proc(proc_move_code, proc_move_args, [-1], True),
-                    mb.stmt_wait(0.05),
-                ],
-            ),
-        ],
-        x=2600,
-        y=40,
-    )
-
-    mb.hat_key_pressed(
-        "right arrow",
-        [
-            mb.stmt_call_proc(proc_move_code, proc_move_args, [1], True),
-            mb.stmt_wait(0.15),
-            mb.stmt_repeat_until(
-                mb.op_not(mb.expr_key_pressed("right arrow")),
-                [
-                    mb.stmt_call_proc(proc_move_code, proc_move_args, [1], True),
-                    mb.stmt_wait(0.05),
-                ],
-            ),
-        ],
-        x=2600,
-        y=340,
-    )
-
-    mb.hat_key_pressed(
-        "down arrow",
-        [
-            mb.stmt_repeat_until(
-                mb.op_not(mb.expr_key_pressed("down arrow")),
-                [
-                    mb.stmt_call_proc(proc_step_code, proc_step_args, [1], True),
-                    mb.stmt_wait(0.05),
-                ],
-            )
-        ],
-        x=2600,
-        y=640,
-    )
-
-    mb.hat_key_pressed(
-        "up arrow",
-        [
-            mb.stmt_call_proc(proc_rot_code, [], [], True),
-            mb.stmt_wait_until(mb.op_not(mb.expr_key_pressed("up arrow"))),
-        ],
-        x=2600,
-        y=900,
-    )
-
-    mb.hat_key_pressed(
-        "space",
-        [
-            mb.stmt_if_else(
-                mb.op_eq("$v:Estado_Juego", "JUGANDO"),
-                [mb.stmt_call_proc(proc_hard_code, [], [], True)],
-                [
-                    mb.stmt_if(
-                        mb.op_or(
-                            mb.op_eq("$v:Estado_Juego", "MENU"),
-                            mb.op_or(
-                                mb.op_eq("$v:Estado_Juego", "GAMEOVER"),
-                                mb.op_eq("$v:Estado_Juego", "VICTORIA"),
-                            ),
-                        ),
-                        [mb.stmt_call_proc(proc_start_code, [], [], True)],
-                    )
-                ],
-            ),
-            mb.stmt_wait_until(mb.op_not(mb.expr_key_pressed("space"))),
-        ],
-        x=2600,
-        y=1120,
-    )
-
-    mb.hat_key_pressed(
-        "c",
-        [
-            mb.stmt_call_proc(proc_hold_code, [], [], True),
-            mb.stmt_wait_until(mb.op_not(mb.expr_key_pressed("c"))),
-        ],
-        x=2600,
-        y=1440,
-    )
-
-    mb.hat_key_pressed(
-        "p",
-        [
-            mb.stmt_broadcast("Alternar_Pausa"),
-            mb.stmt_wait_until(mb.op_not(mb.expr_key_pressed("p"))),
-        ],
-        x=2600,
-        y=1660,
-    )
+    # Un único hilo muta el estado: evita carreras entre teclado, gravedad y render.
+    call = lambda code, args=[], vals=[]: mb.stmt_call_proc(code,args,vals,True)
+    col_below = lambda: call(proc_col_code,proc_col_args,["$v:Pieza_Actual","$v:Pieza_Col",mb.op_add("$v:Pieza_Fila",1),"$v:Pieza_Rotacion"])
+    mb.define_proc("Garbage_Attack",[],[],True,[
+        mb.stmt_set_var("Hueco",mb.op_random(1,10)),
+        mb.stmt_set_var("idx",1),
+        mb.stmt_repeat(10,[mb.stmt_if(mb.op_gt(mb.expr_list_item("Tablero","$v:idx"),0),[mb.stmt_set_var("Estado_Juego","GAMEOVER")]),mb.stmt_change_var("idx",1)]),
+        mb.stmt_repeat(190,[mb.stmt_replace_item_list("Tablero",mb.op_sub("$v:idx",10),mb.expr_list_item("Tablero","$v:idx")),mb.stmt_change_var("idx",1)]),
+        mb.stmt_set_var("c",1),
+        mb.stmt_repeat(10,[mb.stmt_replace_item_list("Tablero",mb.op_add(190,"$v:c"),8),mb.stmt_if(mb.op_eq("$v:c","$v:Hueco"),[mb.stmt_replace_item_list("Tablero",mb.op_add(190,"$v:c"),0)]),mb.stmt_change_var("c",1)]),
+        call(proc_col_code,proc_col_args,["$v:Pieza_Actual","$v:Pieza_Col","$v:Pieza_Fila","$v:Pieza_Rotacion"]),
+        mb.stmt_if(mb.op_eq("$v:Colision_Detectada",1),[
+            mb.stmt_change_var("Pieza_Fila",-1),
+            call(proc_col_code,proc_col_args,["$v:Pieza_Actual","$v:Pieza_Col","$v:Pieza_Fila","$v:Pieza_Rotacion"]) ]),
+        mb.stmt_if(mb.op_eq("$v:Colision_Detectada",1),[mb.stmt_set_var("Estado_Juego","GAMEOVER")]),
+        mb.stmt_set_var("Bloqueo",-1),call(proc_ghost_code),mb.stmt_broadcast("Actualizar_UI")])
+    mb.define_proc("Alternar_Pausa",[],[],True,[
+        mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","JUGANDO"),[mb.stmt_set_var("Estado_Juego","PAUSA")],[mb.stmt_if(mb.op_eq("$v:Estado_Juego","PAUSA"),[mb.stmt_set_var("Estado_Juego","JUGANDO")])]),
+        mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),mb.stmt_broadcast("Actualizar_UI")])
+    key_actions = {
+        "left": ("left arrow",lambda:[call(proc_move_code,proc_move_args,[-1])],True),
+        "right": ("right arrow",lambda:[call(proc_move_code,proc_move_args,[1])],True),
+        "down": ("down arrow",lambda:[call(proc_step_code,proc_step_args,[1])],True),
+        "up": ("up arrow",lambda:[call(proc_rot_code)],False),
+        "space": ("space",lambda:[call(proc_hard_code)],False),
+        "c": ("c",lambda:[call(proc_hold_code)],False),
+        "p": ("p",lambda:[call("Alternar_Pausa")],False),
+        "r": ("r",lambda:[call(proc_start_code)],False),
+        "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),[call(proc_start_code)])],False)}
+    for key,mode in [("1","NORMAL"),("2","HARD"),("3","CHAOS")]:
+        key_actions[key]=(key,lambda mode=mode:[mb.stmt_if(mb.op_not(mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_set_var("Modo_Juego",mode),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),call(proc_render_code),mb.stmt_broadcast("Actualizar_UI")])],False)
+    inputs=[]
+    for key,(scratch_key,actions,repeats) in key_actions.items():
+        body=[mb.stmt_if_else(mb.op_eq("$v:key_"+key,0),actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.16 if key!="down" else 0.05))],
+            [mb.stmt_if(mb.op_gt("$b:"+mb.expr_timer(),"$v:repeat_"+key),actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.05))])] if repeats else []),mb.stmt_set_var("key_"+key,1)]
+        inputs.append(mb.stmt_if_else(mb.expr_key_pressed(scratch_key),body,[mb.stmt_set_var("key_"+key,0)]))
+    mb.define_proc("Leer_Teclado",[],[],True,inputs)
+    mb.define_proc("Tick",[],[],True,[
+        mb.stmt_set_var("Delta",mb.op_sub("$b:"+mb.expr_timer(),"$v:Ultimo_Tick")),
+        mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),
+        mb.stmt_if(mb.op_gt("$v:Delta",0.1),[mb.stmt_set_var("Delta",0.1)]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[
+            mb.stmt_change_var("Tiempo_Juego","$v:Delta"),
+            mb.stmt_if(mb.op_eq("$v:Modo_Juego","CHAOS"),[
+                mb.stmt_set_var("Intervalo_Ataque",mb.op_sub(25,mb.op_div("$v:Tiempo_Juego",30))),
+                mb.stmt_if(mb.op_lt("$v:Intervalo_Ataque",10),[mb.stmt_set_var("Intervalo_Ataque",10)]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:Evento_Fin"),[mb.stmt_set_var("Evento_Caos","NONE")]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:Proximo_Evento"),[
+                    mb.stmt_change_var("Eventos",1),mb.stmt_set_var("Evento_Caos","DIFFICULT PIECES"),
+                    mb.stmt_if(mb.op_eq(mb.op_mod("$v:Eventos",2),0),[mb.stmt_set_var("Evento_Caos","SPEED BURST")]),
+                    mb.stmt_set_var("Evento_Fin",mb.op_add("$v:Tiempo_Juego",7)),
+                    mb.stmt_set_var("Proximo_Evento",mb.op_add("$v:Tiempo_Juego",mb.op_mul("$v:Intervalo_Ataque",0.6))),mb.stmt_play_sound("Sonido_Caos")]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego",mb.op_sub("$v:Proximo_Ataque",2)),[mb.stmt_set_var("Evento_Caos","GARBAGE INCOMING")]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:Proximo_Ataque"),[call("Garbage_Attack"),mb.stmt_set_var("Proximo_Ataque",mb.op_add("$v:Tiempo_Juego","$v:Intervalo_Ataque")),mb.stmt_set_var("Evento_Caos","NONE")])]),
+            call(proc_vel_code),
+            mb.stmt_if(mb.op_gt(mb.op_sub("$v:Tiempo_Juego","$v:Reloj_Caida"),"$v:Velocidad_Caida"),[call(proc_step_code,proc_step_args,[0]),mb.stmt_set_var("Reloj_Caida","$v:Tiempo_Juego")]),
+            col_below(),mb.stmt_if_else(mb.op_eq("$v:Colision_Detectada",1),[
+                mb.stmt_if(mb.op_lt("$v:Bloqueo",0),[mb.stmt_set_var("Bloqueo","$v:Tiempo_Juego")]),
+                mb.stmt_if(mb.op_gt(mb.op_sub("$v:Tiempo_Juego","$v:Bloqueo"),0.35),[mb.stmt_play_sound("Sonido_Caida"),call(proc_lock_code)])],[mb.stmt_set_var("Bloqueo",-1)]),
+            call(proc_render_code)])])
+    mb.hat_green_flag([mb.stmt_hide(),mb.stmt_pen_clear(),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_set_var("Modo_Juego","NORMAL"),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_broadcast("Actualizar_UI"),call(proc_render_code),mb.stmt_forever([call("Tick"),call("Leer_Teclado"),mb.stmt_wait(0.01)])])
+    mb.hat_broadcast("Iniciar_Juego",[call(proc_start_code)])
+    mb.hat_broadcast("Alternar_Pausa",[call("Alternar_Pausa")])
 
     mb.add_comment(
         None,
@@ -2258,10 +1827,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     # --------------------------------------------------------------------------
     # TARGET 2: EFECTO_LINEA (ANIMACIÓN NO BLOQUEANTE AL COMPLETAR 1-4 LÍNEAS)
     # --------------------------------------------------------------------------
-    fx_1 = register_svg_asset("Linea_1", make_line_fx_svg("¡LÍNEA! +100", "#00F0FF"), 74, 17)
-    fx_2 = register_svg_asset("Linea_2", make_line_fx_svg("¡DOBLE! +300", "#00FF66"), 74, 17)
-    fx_3 = register_svg_asset("Linea_3", make_line_fx_svg("¡TRIPLE! +500", "#FFE600"), 74, 17)
-    fx_4 = register_svg_asset("Linea_4", make_line_fx_svg("¡NEXUS x4! +800", "#FF2A85"), 74, 17)
+    fx_1 = register_svg_asset("Linea_1", make_line_fx_svg("SINGLE", "#00F0FF"), 74, 17)
+    fx_2 = register_svg_asset("Linea_2", make_line_fx_svg("DOUBLE", "#00FF66"), 74, 17)
+    fx_3 = register_svg_asset("Linea_3", make_line_fx_svg("TRIPLE", "#FFE600"), 74, 17)
+    fx_4 = register_svg_asset("Linea_4", make_line_fx_svg("NEXUS x4", "#FF2A85"), 74, 17)
     for fx_a in (fx_1, fx_2, fx_3, fx_4):
         all_zip_files[fx_a["md5ext"]] = fx_a["bytes"]
 
@@ -2331,15 +1900,15 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     }
 
     # --------------------------------------------------------------------------
-    # TARGET 3: PANTALLA_ESTADO (MENÚ PRINCIPAL, PAUSA, GAME OVER, VICTORIA)
+    # TARGET 3: PANTALLA_ESTADO (MENÚ PRINCIPAL, PAUSA, GAME OVER)
     # --------------------------------------------------------------------------
     modal_menu = register_svg_asset(
         "Menu_Principal",
         make_modal_svg(
-            "NEXUS BLOCKS: ENDLESS",
-            "Elige MODO y DIFICULTAD abajo",
-            "Controles táctiles iPad y Teclado listos",
-            "▶ TOCA AQUÍ O ESPACIO PARA JUGAR",
+            "NEXUS BLOCKS",
+            "1 NORMAL   2 HARD   3 CHAOS",
+            "Select mode with number keys",
+            "PRESS ENTER TO START",
             "#00F0FF",
         ),
         118,
@@ -2348,10 +1917,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     modal_pausa = register_svg_asset(
         "Pausa_Modal",
         make_modal_svg(
-            "JUEGO EN PAUSA",
-            "Partida detenida temporalmente",
-            "Pulsa P o toca este panel para continuar",
-            "▶ REANUDAR PARTIDA",
+            "PAUSED",
+            "Take a breath",
+            "P TO RESUME",
+            "R TO RESTART",
             "#FFE600",
         ),
         118,
@@ -2360,28 +1929,16 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     modal_gameover = register_svg_asset(
         "GameOver_Modal",
         make_modal_svg(
-            "FIN DE LA PARTIDA",
-            "El tablero ha llegado al límite superior",
-            "Revisa tu puntuación y vuelve a intentarlo",
-            "↻ TOCA AQUÍ PARA REINICIAR",
+            "GAME OVER",
+            "The stack reached the top",
+            "Ready for another round?",
+            "ENTER TO PLAY AGAIN",
             "#FF2A55",
         ),
         118,
         84,
     )
-    modal_victoria = register_svg_asset(
-        "Victoria_Modal",
-        make_modal_svg(
-            "¡SPRINT 40L COMPLETADO!",
-            "¡Has superado el reto de 40 líneas!",
-            "Comprueba tu marca en Tiempo_Sprint",
-            "★ JUGAR DE NUEVO",
-            "#00FF66",
-        ),
-        118,
-        84,
-    )
-    for m_asset in (modal_menu, modal_pausa, modal_gameover, modal_victoria):
+    for m_asset in (modal_menu, modal_pausa, modal_gameover):
         all_zip_files[m_asset["md5ext"]] = m_asset["bytes"]
 
     pb = ScratchBlockBuilder("pan", var_map, list_map, bcast_specs)
@@ -2415,26 +1972,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         pb.op_eq("$v:Estado_Juego", "GAMEOVER"),
                         [pb.stmt_switch_costume("GameOver_Modal")],
                     ),
-                    pb.stmt_if(
-                        pb.op_eq("$v:Estado_Juego", "VICTORIA"),
-                        [pb.stmt_switch_costume("Victoria_Modal")],
-                    ),
                 ],
             ),
         ],
         x=40,
         y=220,
-    )
-    pb.hat_sprite_clicked(
-        [
-            pb.stmt_if_else(
-                pb.op_eq("$v:Estado_Juego", "PAUSA"),
-                [pb.stmt_broadcast("Alternar_Pausa")],
-                [pb.stmt_broadcast("Iniciar_Juego")],
-            )
-        ],
-        x=40,
-        y=620,
     )
 
     pantalla_target = {
@@ -2450,7 +1992,6 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             {k: v for k, v in modal_menu.items() if k != "bytes"},
             {k: v for k, v in modal_pausa.items() if k != "bytes"},
             {k: v for k, v in modal_gameover.items() if k != "bytes"},
-            {k: v for k, v in modal_victoria.items() if k != "bytes"},
         ],
         "sounds": [],
         "volume": 100,
@@ -2464,356 +2005,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "rotationStyle": "all around",
     }
 
-    # --------------------------------------------------------------------------
-    # FUNCIÓN AUXILIAR PARA CREAR SPRITES DE BOTONES TÁCTILES (IPAD)
-    # --------------------------------------------------------------------------
-    def make_touch_button_target(
-        sprite_name: str,
-        prefix: str,
-        x_pos: int,
-        y_pos: int,
-        width: int,
-        height: int,
-        bg_hex: str,
-        stroke_hex: str,
-        label_top: str,
-        label_sub: str,
-        action_code: str,
-        continuous_hold: bool,
-        layer_order: int,
-        bcast_override: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        c_asset = register_svg_asset(
-            f"Cost_{sprite_name}",
-            make_button_svg(width, height, bg_hex, stroke_hex, label_top, label_sub),
-            width / 2.0,
-            height / 2.0,
-        )
-        all_zip_files[c_asset["md5ext"]] = c_asset["bytes"]
-
-        bb = ScratchBlockBuilder(prefix, var_map, list_map, bcast_specs)
-        bb.hat_green_flag(
-            [
-                bb.stmt_goto_xy(x_pos, y_pos),
-                bb.stmt_show(),
-            ],
-            x=40,
-            y=40,
-        )
-
-        if bcast_override:
-            click_stmts = [
-                bb.stmt_broadcast(bcast_override),
-                bb.stmt_wait_until(bb.op_not(bb.expr_mousedown())),
-            ]
-        elif continuous_hold:
-            click_stmts = [
-                bb.stmt_set_var("Accion_Tactil", action_code),
-                bb.stmt_broadcast("Ejecutar_Accion", wait=True),
-                bb.stmt_wait(0.16),
-                bb.stmt_repeat_until(
-                    bb.op_not(
-                        bb.op_and(
-                            bb.expr_mousedown(),
-                            bb.expr_touching_mouse(),
-                        )
-                    ),
-                    [
-                        bb.stmt_set_var("Accion_Tactil", action_code),
-                        bb.stmt_broadcast("Ejecutar_Accion", wait=True),
-                        bb.stmt_wait(0.055),
-                    ],
-                ),
-            ]
-        else:
-            click_stmts = [
-                bb.stmt_set_var("Accion_Tactil", action_code),
-                bb.stmt_broadcast("Ejecutar_Accion", wait=True),
-                bb.stmt_wait_until(bb.op_not(bb.expr_mousedown())),
-            ]
-
-        bb.hat_sprite_clicked(click_stmts, x=40, y=180)
-
-        return {
-            "isStage": False,
-            "name": sprite_name,
-            "variables": {},
-            "lists": {},
-            "broadcasts": {},
-            "blocks": bb.blocks,
-            "comments": bb.comments,
-            "currentCostume": 0,
-            "costumes": [{k: v for k, v in c_asset.items() if k != "bytes"}],
-            "sounds": [],
-            "volume": 100,
-            "layerOrder": layer_order,
-            "visible": True,
-            "x": x_pos,
-            "y": y_pos,
-            "size": 100,
-            "direction": 90,
-            "draggable": False,
-            "rotationStyle": "all around",
-        }
-
-    touch_targets = [
-        make_touch_button_target(
-            "Btn_Izquierda",
-            "bizq",
-            x_pos=-198,
-            y_pos=-42,
-            width=68,
-            height=56,
-            bg_hex="#0D1E38",
-            stroke_hex="#00F0FF",
-            label_top="◀ IZQ",
-            label_sub="MOVER",
-            action_code="IZQ",
-            continuous_hold=True,
-            layer_order=2,
-        ),
-        make_touch_button_target(
-            "Btn_Derecha",
-            "bder",
-            x_pos=-122,
-            y_pos=-42,
-            width=68,
-            height=56,
-            bg_hex="#0D1E38",
-            stroke_hex="#00F0FF",
-            label_top="DER ▶",
-            label_sub="MOVER",
-            action_code="DER",
-            continuous_hold=True,
-            layer_order=3,
-        ),
-        make_touch_button_target(
-            "Btn_BajarSuave",
-            "bbaj",
-            x_pos=-160,
-            y_pos=-108,
-            width=144,
-            height=50,
-            bg_hex="#0D1E38",
-            stroke_hex="#00FF66",
-            label_top="▼ BAJAR SUAVE",
-            label_sub="MANTENER [▼]",
-            action_code="BAJAR",
-            continuous_hold=True,
-            layer_order=4,
-        ),
-        make_touch_button_target(
-            "Btn_Hold",
-            "bhld",
-            x_pos=-160,
-            y_pos=26,
-            width=120,
-            height=36,
-            bg_hex="#131E3A",
-            stroke_hex="#FFE600",
-            label_top="⇄ HOLD",
-            label_sub="GUARDAR [C]",
-            action_code="HOLD",
-            continuous_hold=False,
-            layer_order=5,
-        ),
-        make_touch_button_target(
-            "Btn_Rotar",
-            "brot",
-            x_pos=160,
-            y_pos=-42,
-            width=144,
-            height=56,
-            bg_hex="#1E1038",
-            stroke_hex="#B829FF",
-            label_top="⟳ ROTAR PIEZA",
-            label_sub="GIRO [▲]",
-            action_code="ROTAR",
-            continuous_hold=False,
-            layer_order=6,
-        ),
-        make_touch_button_target(
-            "Btn_CaidaDura",
-            "bdrp",
-            x_pos=160,
-            y_pos=-108,
-            width=144,
-            height=50,
-            bg_hex="#2A0E24",
-            stroke_hex="#FF2A55",
-            label_top="⚡ CAÍDA DURA",
-            label_sub="INSTANTÁNEA [ESP]",
-            action_code="CAIDA",
-            continuous_hold=False,
-            layer_order=7,
-        ),
-        make_touch_button_target(
-            "Btn_Pausa",
-            "bpau",
-            x_pos=160,
-            y_pos=26,
-            width=120,
-            height=36,
-            bg_hex="#131E3A",
-            stroke_hex="#00F0FF",
-            label_top="⏸ PAUSA",
-            label_sub="PAUSAR [P]",
-            action_code="PAUSA",
-            continuous_hold=False,
-            layer_order=8,
-            bcast_override="Alternar_Pausa",
-        ),
-        make_touch_button_target(
-            "Btn_Modo",
-            "bmod",
-            x_pos=-160,
-            y_pos=-156,
-            width=144,
-            height=32,
-            bg_hex="#0F243C",
-            stroke_hex="#00F0FF",
-            label_top="MODO DE JUEGO",
-            label_sub="",
-            action_code="",
-            continuous_hold=False,
-            layer_order=9,
-            bcast_override="Cambiar_Modo",
-        ),
-        make_touch_button_target(
-            "Btn_Dificultad",
-            "bdif",
-            x_pos=160,
-            y_pos=-156,
-            width=144,
-            height=32,
-            bg_hex="#261838",
-            stroke_hex="#FFE600",
-            label_top="DIFICULTAD",
-            label_sub="",
-            action_code="",
-            continuous_hold=False,
-            layer_order=10,
-            bcast_override="Cambiar_Dificultad",
-        ),
-        make_touch_button_target(
-            "Btn_Reiniciar",
-            "brei",
-            x_pos=0,
-            y_pos=-164,
-            width=148,
-            height=26,
-            bg_hex="#0B2E26",
-            stroke_hex="#00FF66",
-            label_top="↻ NUEVA PARTIDA",
-            label_sub="",
-            action_code="",
-            continuous_hold=False,
-            layer_order=11,
-            bcast_override="Iniciar_Juego",
-        ),
-    ]
-
-    monitors = [
-        {
-            "id": var_map["Puntuacion"],
-            "mode": "default",
-            "opcode": "data_variable",
-            "params": {"VARIABLE": "Puntuacion"},
-            "spriteName": None,
-            "value": 0,
-            "width": 0,
-            "height": 0,
-            "x": 6,
-            "y": 4,
-            "visible": True,
-            "sliderMin": 0,
-            "sliderMax": 100,
-            "isDiscrete": True,
-        },
-        {
-            "id": var_map["Lineas"],
-            "mode": "default",
-            "opcode": "data_variable",
-            "params": {"VARIABLE": "Lineas"},
-            "spriteName": None,
-            "value": 0,
-            "width": 0,
-            "height": 0,
-            "x": 6,
-            "y": 27,
-            "visible": True,
-            "sliderMin": 0,
-            "sliderMax": 100,
-            "isDiscrete": True,
-        },
-        {
-            "id": var_map["Nivel"],
-            "mode": "default",
-            "opcode": "data_variable",
-            "params": {"VARIABLE": "Nivel"},
-            "spriteName": None,
-            "value": 1,
-            "width": 0,
-            "height": 0,
-            "x": 88,
-            "y": 27,
-            "visible": True,
-            "sliderMin": 0,
-            "sliderMax": 100,
-            "isDiscrete": True,
-        },
-        {
-            "id": var_map["Modo_Juego"],
-            "mode": "default",
-            "opcode": "data_variable",
-            "params": {"VARIABLE": "Modo_Juego"},
-            "spriteName": None,
-            "value": "ENDLESS CLASSIC",
-            "width": 0,
-            "height": 0,
-            "x": 330,
-            "y": 4,
-            "visible": True,
-            "sliderMin": 0,
-            "sliderMax": 100,
-            "isDiscrete": True,
-        },
-        {
-            "id": var_map["Dificultad"],
-            "mode": "default",
-            "opcode": "data_variable",
-            "params": {"VARIABLE": "Dificultad"},
-            "spriteName": None,
-            "value": "Normal",
-            "width": 0,
-            "height": 0,
-            "x": 330,
-            "y": 27,
-            "visible": True,
-            "sliderMin": 0,
-            "sliderMax": 100,
-            "isDiscrete": True,
-        },
-        {
-            "id": var_map["Evento_Caos"],
-            "mode": "default",
-            "opcode": "data_variable",
-            "params": {"VARIABLE": "Evento_Caos"},
-            "spriteName": None,
-            "value": "NINGUNO",
-            "width": 0,
-            "height": 0,
-            "x": 330,
-            "y": 128,
-            "visible": True,
-            "sliderMin": 0,
-            "sliderMax": 100,
-            "isDiscrete": True,
-        },
-    ]
+    monitors = []
 
     project_json = {
-        "targets": [stage_target, motor_target, fx_target, pantalla_target] + touch_targets,
+        "targets": [stage_target, motor_target, fx_target, pantalla_target],
         "monitors": monitors,
         "extensions": ["pen"],
         "meta": {
@@ -2827,9 +2022,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
 
     os.makedirs(os.path.dirname(os.path.abspath(output_sb3_path)), exist_ok=True)
     with zipfile.ZipFile(output_sb3_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("project.json", project_json_bytes)
+        zf.writestr(zipfile.ZipInfo("project.json", (2026, 10, 19, 0, 0, 0)), project_json_bytes, compress_type=zipfile.ZIP_DEFLATED)
         for fname, fbytes in sorted(all_zip_files.items()):
-            zf.writestr(fname, fbytes)
+            zf.writestr(zipfile.ZipInfo(fname, (2026, 10, 19, 0, 0, 0)), fbytes, compress_type=zipfile.ZIP_DEFLATED)
 
     return project_json
 
