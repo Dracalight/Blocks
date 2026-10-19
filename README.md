@@ -31,7 +31,7 @@ All modes are endless. Gravity runs without keyboard input. The technical minimu
 | 1 / 2 / 3 | Select Normal / Hard / Chaos outside active play; returns to a fresh menu |
 | Enter | Start from menu / Game Over |
 
-No touch controls remain. See [controls](docs/CONTROLS.md), [architecture](docs/ARCHITECTURE.md), [test evidence and limits](docs/TESTS.md), and [changelog](CHANGELOG.md). Physical iPad keyboard / Safari acceptance remains pending; desktop browser import and gameplay have been exercised.
+No touch controls remain. See [controls](docs/CONTROLS.md), [architecture](docs/ARCHITECTURE.md), [test evidence and limits](docs/TESTS.md), [changelog](CHANGELOG.md), and the [versioning and release rule](docs/VERSIONING.md). Physical iPad keyboard / Safari acceptance remains pending; desktop browser import and gameplay have been exercised.
 
 ## Rebuild and verify
 
