@@ -1,0 +1,3 @@
+Fecha: 22 de octubre de 2026 (Asia/Tokyo)
+Entorno: Playwright local.
+Resultado: no se pudo iniciar el navegador; Chromium no está instalado en la caché de Playwright. El intento terminó antes de navegar a Scratch.
