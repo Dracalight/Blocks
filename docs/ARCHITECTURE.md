@@ -2,6 +2,8 @@
 
 El juego existente sigue generado por tools/build_sb3.py como proyecto Scratch 3 nativo. No hay runtime web externo. La extensión oficial Pen estampa el tablero y el HUD sin clones ni monitores. Los cuatro targets son Stage, Motor_Juego, Efecto_Linea y Pantalla_Estado. Se eliminaron sprites, recursos y eventos táctiles.
 
+Los fondos Normal y Chaos comparten la firma discreta del creador en SVG; el pulgar se dibuja como vector para no depender de fuentes emoji. Los WAV autorizados 07–13 se guardan en `assets/sfx/` y el generador los incorpora con sus hashes y metadatos. Los efectos de línea se eligen por `Lineas_Turno`; Chaos usa `Aviso_Ataque` para emitir una sola advertencia por ataque. Al borrar líneas, `Nivel` avanza a `1 + floor(Lineas / 10)` sin recalcular la puntuación de esa misma jugada con el nivel nuevo.
+
 ## Planificación y gravedad
 
 Un único hilo ejecuta Tick, Leer_Teclado y una espera cooperativa de 0.01 s. Los procedimientos finitos son warp y atómicos. El planificador de Scratch limita la cadencia a los frames disponibles; una espera de 0.01 no promete 100 FPS.

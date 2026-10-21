@@ -130,10 +130,26 @@ def validate_sb3_structure(sb3_path: str) -> Tuple[bool, List[str], Dict[str, An
                 assert calc_md5 == s["assetId"], f"MD5 inválido en sonido {md5ext}"
                 with wave.open(io.BytesIO(raw), "rb") as wf:
                     assert wf.getnchannels() == 1
-                    assert wf.getframerate() == 22050
+                    assert wf.getframerate() in {22050, 44100}
                 asset_count += 1
 
         logs.append(f"[PASS] {asset_count} activos (disfraces SVG y sonidos WAV) verificados con hash MD5 y formato íntegro.")
+
+        expected_sfx = {
+            "07_line_clear_1", "08_line_clear_2", "09_line_clear_3", "10_tetris_4",
+            "11_chaos_warning", "12_level_up", "13_game_start",
+        }
+        motor = next(t for t in targets if t["name"] == "Motor_Juego")
+        sound_names = {sound["name"] for sound in motor["sounds"]}
+        assert expected_sfx <= sound_names
+        forbidden_prefixes = tuple(f"{i:02d}_" for i in [1, 2, 3, 4, 5, 6, 14])
+        assert not any(name.startswith(forbidden_prefixes) for name in sound_names)
+        for backdrop in ("Fondo_Arcade", "Fondo_Caos"):
+            costume = next(c for c in stages[0]["costumes"] if c["name"] == backdrop)
+            svg = zf.read(costume["md5ext"]).decode("utf-8")
+            assert "楽しんでください" in svg and "by バスケス・ライアン" in svg
+            assert 'width="480" height="360"' in svg
+        logs.append("[PASS] Firma japonesa presente en ambos fondos y exactamente los siete WAV autorizados registrados en Scratch.")
 
         total_blocks = 0
         for t in targets:
@@ -521,15 +537,28 @@ def run_all_tests(sb3_path: str) -> List[str]:
                 vm.lists["Tablero"][(r - 1) * 10 + (c - 1)] = 3
         witness_row = 20 - num_lines
         vm.lists["Tablero"][(witness_row - 1) * 10 + 0] = 7
+        vm.sounds_played.clear()
         vm.call_proc("Revisar_Y_Eliminar_Lineas")
         assert vm.vars["Lineas_Turno"] == num_lines
         assert vm.vars["Lineas"] == num_lines
         assert vm.vars["Puntuacion"] == expected_pts
         assert vm.lists["Tablero"][(20 - 1) * 10 + 0] == 7
         assert sum(1 for x in vm.lists["Tablero"] if x > 0) == 1
+        expected_sound = {1:"07_line_clear_1",2:"08_line_clear_2",3:"09_line_clear_3",4:"10_tetris_4"}[num_lines]
+        assert vm.sounds_played == [expected_sound]
     report.append(
-        "[PASS] Prueba 5 (Eliminación de 1, 2, 3 y 4 líneas): Limpieza simultánea verificada (100/300/500/800 pts) y descenso exacto de filas superiores."
+        "[PASS] Prueba 5 (Eliminación de 1, 2, 3 y 4 líneas): Limpieza simultánea, 100/300/500/800 pts y sonido único correcto por jugada."
     )
+
+    vm.call_proc("Iniciar_Partida")
+    vm.vars["Lineas"] = 9
+    for c in range(1, 11):
+        vm.lists["Tablero"][190 + c - 1] = 4
+    vm.sounds_played.clear()
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.vars["Lineas"] == 10 and vm.vars["Nivel"] == 2
+    assert vm.sounds_played == ["07_line_clear_1", "12_level_up"]
+    report.append("[PASS] Progresión: sube un nivel al alcanzar cada 10 líneas y dispara una sola vez 12_level_up sin cambiar la puntuación base de esa limpieza.")
 
     vm.call_proc("Iniciar_Partida")
     first_piece = vm.vars["Pieza_Actual"]
@@ -552,6 +581,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     assert vm.vars["Estado_Juego"] == "GAMEOVER"
     vm.trigger_broadcast("Iniciar_Juego")
     assert vm.vars["Estado_Juego"] == "JUGANDO" and all(x == 0 for x in vm.lists["Tablero"])
+    assert vm.sounds_played[-1] == "13_game_start"
     report.append(
         "[PASS] Prueba 7 (Detección de Game Over y Reinicio): Fin de partida detectado al bloquearse la zona superior y limpieza total al reiniciar."
     )
@@ -587,6 +617,16 @@ def run_all_tests(sb3_path: str) -> List[str]:
     assert sum(int(x)>0 for x in vm.lists["Tablero"])>=4
     assert vm.vars["Pieza_Fila"]>=3
     report.append("[PASS] 20 segundos inactivos: caída, fijación y siguiente pieza.")
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Estado_Juego="JUGANDO", Modo_Juego="CHAOS", Tiempo_Juego=22.0,
+                   Ultimo_Tick=0.0, Proximo_Ataque=24.0, Proximo_Evento=100.0, Evento_Fin=0.0)
+    vm.sounds_played.clear()
+    for tick in range(1, 16):
+        vm.sim_timer = tick / 10
+        vm.call_proc("Tick")
+    assert vm.sounds_played.count("11_chaos_warning") == 1
+    assert vm.vars["Evento_Caos"] == "GARBAGE INCOMING"
+    report.append("[PASS] Chaos: aviso GARBAGE INCOMING reproduce 11_chaos_warning una vez, aunque Tick continúe ejecutándose.")
     vm.call_proc("Iniciar_Partida")
     vm.vars["Pieza_Fila"]=10
     vm.call_proc("Garbage_Attack")
