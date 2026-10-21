@@ -17,12 +17,13 @@ La aceptación integral queda **inconclusa**: el navegador disponible rechaza el
 | Repositorio | `Dracalight/Blocks` |
 | Rama requerida, base de trabajo | `feat/nexus-blocks-credits-sfx` |
 | Commit base verificado | `7da0c6801bdef4b72b84aa4b0ff5b7da66cdfc1d` |
-| Rama local independiente | `audit/nexus-blocks-independent-local` |
+| Rama independiente publicada | `audit/nexus-blocks-independent-local` |
+| Commit publicado en GitHub | `52768986fd349432fc166730443ed16f61436be2` |
 | `main`, solo comparación | `cb3bf7f53a323c948dbf458ee577a35e32e008af` |
 | SHA-256 SB3 antes | `943d8560392b80c5d20546b3eb38ae2a5d64c91b535a3ea3583a5c9467ce2164` |
 | SHA-256 SB3 final | `697bd5dc39f64dc5cd76872654b399b5c430d3e716bdf85a2e74db8e20fc53ee` |
 
-Los cambios permanecen locales, sin commit nuevo, push, PR ni merge. `main` nunca fue la copia de trabajo. `audit-evidence/remote-refs.txt` conserva la comprobación remota final.
+El trabajo se publicó el 22 de octubre de 2026 en la rama independiente `audit/nexus-blocks-independent-local`. El commit remoto `52768986fd349432fc166730443ed16f61436be2` conserva el mismo árbol que el commit local `cf5e6237233a26963bd853351f30f7e1529b63fd`; GitHub generó otro SHA al crear el commit con su API. La rama base `feat/nexus-blocks-credits-sfx` y `main` permanecen intactas. No se creó PR ni se fusionaron cambios. `audit-evidence/remote-refs.txt` es la instantánea de refs tomada antes de publicar.
 
 Se inspeccionaron el generador completo, el validador/intérprete, los dos puntos de entrada de pruebas, paquete y lockfile, los activos del SB3 y WAV 07–13, README, CHANGELOG y documentos de arquitectura, controles, pruebas y versionado. Los resultados históricos y `docs/gameplay.png` son contexto previo, no evidencia de una partida actual.
 
