@@ -72,7 +72,7 @@ def synthesize_wav(notes: List[Tuple[float, float, str]], sample_rate: int = 220
 
 
 def build_sound_assets() -> Dict[str, Dict[str, Any]]:
-    """Crea el catálogo de efectos de sonido arcade originales."""
+    """Crea efectos originales existentes y carga únicamente los SFX aprobados."""
     specs = {
         "Sonido_Mover": [(320.0, 0.035, "triangle")],
         "Sonido_Rotar": [(520.0, 0.045, "sweep_up"), (680.0, 0.045, "triangle")],
@@ -106,6 +106,36 @@ def build_sound_assets() -> Dict[str, Dict[str, Any]]:
             "rate": 22050,
             "sampleCount": sample_count,
         }
+    approved_sfx = (
+        "07_line_clear_1.wav",
+        "08_line_clear_2.wav",
+        "09_line_clear_3.wav",
+        "10_tetris_4.wav",
+        "11_chaos_warning.wav",
+        "12_level_up.wav",
+        "13_game_start.wav",
+    )
+    sfx_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "sfx")
+    for filename in approved_sfx:
+        path = os.path.join(sfx_dir, filename)
+        with open(path, "rb") as source:
+            raw_bytes = source.read()
+        with wave.open(io.BytesIO(raw_bytes), "rb") as wf:
+            sample_count = wf.getnframes()
+            rate = wf.getframerate()
+            if wf.getnchannels() != 1 or wf.getsampwidth() != 2:
+                raise ValueError(f"Formato WAV no admitido para Scratch: {filename}")
+        asset_id = hashlib.md5(raw_bytes).hexdigest()
+        assets[filename[:-4]] = {
+            "name": filename[:-4],
+            "bytes": raw_bytes,
+            "assetId": asset_id,
+            "md5ext": f"{asset_id}.wav",
+            "dataFormat": "wav",
+            "format": "",
+            "rate": rate,
+            "sampleCount": sample_count,
+        }
     return assets
 
 
@@ -133,7 +163,9 @@ def make_stage_backdrop_svg(border_color="#31435A", subtitle="KEYBOARD ARCADE"):
     grid += ''.join(f'<path d="M165 {30+r*15}H315" stroke="#152033"/>' for r in range(1,20))
     labels = [(80,60,"HOLD"),(80,160,"SCORE"),(400,60,"NEXT"),(400,160,"LEVEL"),(400,218,"LINES"),(400,276,"MODE")]
     text = ''.join(f'<text x="{x}" y="{y}" text-anchor="middle" fill="#8B9CB5" font-family="sans-serif" font-size="10" letter-spacing="2">{t}</text>' for x,y,t in labels)
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#090F1B"/><rect x="163" y="28" width="154" height="304" rx="2" fill="#070B13" stroke="{border_color}"/>{grid}{text}<text x="240" y="18" text-anchor="middle" fill="#DDE7F5" font-family="sans-serif" font-size="11" letter-spacing="3">NEXUS BLOCKS</text><text x="240" y="350" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">ARROWS MOVE / ROTATE · SPACE DROP · C HOLD · P PAUSE · R RESTART</text></svg>'''
+    # A tiny vector thumbs-up avoids depending on emoji font support in Scratch's SVG renderer.
+    signature = '''<text x="42" y="308" text-anchor="start" fill="#70829D" font-family="sans-serif" font-size="9">楽しんでください</text><path d="M114 300c2-2 3-5 4-8l1-4c.4-1.5 2.4-1.2 2.4.4v6.4h4.2c1.7 0 2.5 1.3 2.1 2.8l-1.5 7.1c-.3 1.3-1.2 2-2.5 2h-5.1c-1.5 0-2.7-.7-3.6-1.8l-2-2.4 2-4.5z" fill="#70829D"/><path d="M110 302h2v7h-2z" fill="#70829D"/><text x="80" y="326" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">by バスケス・ライアン</text>'''
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#090F1B"/><rect x="163" y="28" width="154" height="304" rx="2" fill="#070B13" stroke="{border_color}"/>{grid}{text}<text x="240" y="18" text-anchor="middle" fill="#DDE7F5" font-family="sans-serif" font-size="11" letter-spacing="3">NEXUS BLOCKS</text>{signature}<text x="240" y="350" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">ARROWS MOVE / ROTATE · SPACE DROP · C HOLD · P PAUSE · R RESTART</text></svg>'''
 
 
 def make_block_svg(fill_hex: str, highlight_hex: str, border_hex: str, size: int = 15) -> str:
@@ -793,7 +825,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
 
     for name, value in {"Tiempo_Juego":0, "Ultimo_Tick":0, "Delta":0, "Bloqueo":-1,
                         "Evento_Fin":0, "Proximo_Evento":12, "Proximo_Ataque":25,
-                        "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0}.items():
+                        "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "Aviso_Ataque":0, "hud_num":0, "hud_pos":0}.items():
         var_specs[name] = ("v2_"+name, value)
     for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "enter"]:
         var_specs["key_"+key] = ("v2_key_"+key, 0)
@@ -920,6 +952,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             "Sonido_Hold",
             "Sonido_Caos",
             "Sonido_GameOver",
+            "07_line_clear_1",
+            "08_line_clear_2",
+            "09_line_clear_3",
+            "10_tetris_4",
+            "11_chaos_warning",
+            "12_level_up",
+            "13_game_start",
         )
     ]
 
@@ -1374,9 +1413,21 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_if_else(
                 mb.op_gt("$v:Lineas_Turno", 0),
                 [
-                    mb.stmt_play_sound("Sonido_Linea"),
                     mb.stmt_broadcast("Animar_Linea"),
                     mb.stmt_change_var("Lineas", "$v:Lineas_Turno"),
+                    mb.stmt_if_else(
+                        mb.op_eq("$v:Lineas_Turno", 1),
+                        [mb.stmt_play_sound("07_line_clear_1")],
+                        [mb.stmt_if_else(
+                            mb.op_eq("$v:Lineas_Turno", 2),
+                            [mb.stmt_play_sound("08_line_clear_2")],
+                            [mb.stmt_if_else(
+                                mb.op_eq("$v:Lineas_Turno", 3),
+                                [mb.stmt_play_sound("09_line_clear_3")],
+                                [mb.stmt_play_sound("10_tetris_4")],
+                            )],
+                        )],
+                    ),
                     mb.stmt_change_var("Combo", 1),
                     mb.stmt_if_else(
                         mb.op_eq("$v:Lineas_Turno", 1),
@@ -1409,6 +1460,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                                 "Puntuacion",
                                 mb.op_mul(mb.op_mul(50, "$v:Combo"), "$v:Nivel"),
                             )
+                        ],
+                    ),
+                    mb.stmt_if(
+                        mb.op_gt(mb.op_add(1, mb.op_math("floor", mb.op_div("$v:Lineas", 10))), "$v:Nivel"),
+                        [
+                            mb.stmt_set_var("Nivel", mb.op_add(1, mb.op_math("floor", mb.op_div("$v:Lineas", 10)))),
+                            mb.stmt_play_sound("12_level_up"),
                         ],
                     ),
                 ],
@@ -1716,6 +1774,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Proximo_Ataque", 25),
             mb.stmt_set_var("Evento_Fin", 0),
             mb.stmt_set_var("Eventos", 0),
+            mb.stmt_set_var("Aviso_Ataque", 0),
             mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(proc_vel_code, [], [], True),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
@@ -1758,8 +1817,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "space": ("space",lambda:[call(proc_hard_code)],False),
         "c": ("c",lambda:[call(proc_hold_code)],False),
         "p": ("p",lambda:[call("Alternar_Pausa")],False),
-        "r": ("r",lambda:[call(proc_start_code)],False),
-        "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),[call(proc_start_code)])],False)}
+        "r": ("r",lambda:[mb.stmt_play_sound("13_game_start"),call(proc_start_code)],False),
+        "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),[mb.stmt_play_sound("13_game_start"),call(proc_start_code)])],False)}
     for key,mode in [("1","NORMAL"),("2","HARD"),("3","CHAOS")]:
         key_actions[key]=(key,lambda mode=mode:[mb.stmt_if(mb.op_not(mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_set_var("Modo_Juego",mode),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),call(proc_render_code),mb.stmt_broadcast("Actualizar_UI")])],False)
     inputs=[]
@@ -1783,8 +1842,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_if(mb.op_eq(mb.op_mod("$v:Eventos",2),0),[mb.stmt_set_var("Evento_Caos","SPEED BURST")]),
                     mb.stmt_set_var("Evento_Fin",mb.op_add("$v:Tiempo_Juego",7)),
                     mb.stmt_set_var("Proximo_Evento",mb.op_add("$v:Tiempo_Juego",mb.op_mul("$v:Intervalo_Ataque",0.6))),mb.stmt_play_sound("Sonido_Caos")]),
-                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego",mb.op_sub("$v:Proximo_Ataque",2)),[mb.stmt_set_var("Evento_Caos","GARBAGE INCOMING")]),
-                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:Proximo_Ataque"),[call("Garbage_Attack"),mb.stmt_set_var("Proximo_Ataque",mb.op_add("$v:Tiempo_Juego","$v:Intervalo_Ataque")),mb.stmt_set_var("Evento_Caos","NONE")])]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego",mb.op_sub("$v:Proximo_Ataque",2)),[
+                    mb.stmt_set_var("Evento_Caos","GARBAGE INCOMING"),
+                    mb.stmt_if(mb.op_eq("$v:Aviso_Ataque",0),[
+                        mb.stmt_set_var("Aviso_Ataque",1),
+                        mb.stmt_play_sound("11_chaos_warning"),
+                    ])]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:Proximo_Ataque"),[call("Garbage_Attack"),mb.stmt_set_var("Proximo_Ataque",mb.op_add("$v:Tiempo_Juego","$v:Intervalo_Ataque")),mb.stmt_set_var("Aviso_Ataque",0),mb.stmt_set_var("Evento_Caos","NONE")])]),
             call(proc_vel_code),
             mb.stmt_if(mb.op_gt(mb.op_sub("$v:Tiempo_Juego","$v:Reloj_Caida"),"$v:Velocidad_Caida"),[call(proc_step_code,proc_step_args,[0]),mb.stmt_set_var("Reloj_Caida","$v:Tiempo_Juego")]),
             col_below(),mb.stmt_if_else(mb.op_eq("$v:Colision_Detectada",1),[
@@ -1792,7 +1856,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_if(mb.op_gt(mb.op_sub("$v:Tiempo_Juego","$v:Bloqueo"),0.35),[mb.stmt_play_sound("Sonido_Caida"),call(proc_lock_code)])],[mb.stmt_set_var("Bloqueo",-1)]),
             call(proc_render_code)])])
     mb.hat_green_flag([mb.stmt_hide(),mb.stmt_pen_clear(),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_set_var("Modo_Juego","NORMAL"),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_broadcast("Actualizar_UI"),call(proc_render_code),mb.stmt_forever([call("Tick"),call("Leer_Teclado"),mb.stmt_wait(0.01)])])
-    mb.hat_broadcast("Iniciar_Juego",[call(proc_start_code)])
+    mb.hat_broadcast("Iniciar_Juego",[mb.stmt_play_sound("13_game_start"),call(proc_start_code)])
     mb.hat_broadcast("Alternar_Pausa",[call("Alternar_Pausa")])
 
     mb.add_comment(

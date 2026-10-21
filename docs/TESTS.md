@@ -1,5 +1,12 @@
 # Pruebas y límites — 2026-10-19
 
+## Firma y efectos de sonido — 2026-10-21
+
+- `python tools/build_sb3.py`, `python tools/validate_sb3.py` y `python tools/test_sb3.py`: aprobados. El proyecto contiene 50 entradas ZIP, 49 activos con hashes/formato verificados y 1221 bloques Scratch.
+- Se confirmó la firma en ambos SVG de fondo y la presencia de los siete WAV autorizados. Las pruebas funcionales seleccionan exactamente un efecto 07–10 por jugada, avanzan `Nivel` al alcanzar 10 líneas, disparan `12_level_up` una vez y limitan `11_chaos_warning` a una vez por ataque.
+- `npm ci --ignore-scripts` y `npm test`: aprobados. El planificador Scratch VM comprobó las mecánicas e interacciones, pero el entorno indicó que no hay módulo de renderizado ni motor de audio. Por ello, no se afirma una reproducción auditiva real ni una comprobación visual del aspecto final en el editor oficial.
+- Pendiente: escuchar los sonidos y verificar visualmente la firma en el editor Scratch 3 con renderizado y sonido habilitados.
+
 ## Evidencia ejecutada
 
 - Python: estructura ZIP, hashes MD5, SVG/XML, WAV/PCM, opcodes oficiales y grafo sin huérfanos. Artefacto: 4 targets, 1178 bloques, 42 recursos.

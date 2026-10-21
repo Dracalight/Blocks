@@ -1,5 +1,12 @@
 # Changelog — NEXUS BLOCKS
 
+## Firma y efectos de sonido — 2026-10-21
+
+- Added the small Japanese creator signature to both stage backdrops, with a vector thumbs-up for reliable Scratch rendering.
+- Added only approved WAV effects 07–13 and mapped line clears, Chaos warnings, level increases and game starts to their events.
+- Restored the documented level progression at every 10 cleared lines while preserving the level multiplier for the boundary-clearing move.
+- Added structural and functional checks for the assets, sound selection, one-shot warning and level progression.
+
 ## Keyboard overhaul — 2026-10-19
 
 - Removed all touch sprites, click handlers, old difficulty selection, Relax and Sprint.
