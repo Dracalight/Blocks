@@ -1,0 +1,9 @@
+{
+  "logicalSeconds": 600,
+  "ticks": 6000,
+  "boardScrubs": 600,
+  "events": 69,
+  "garbageWarningDispatches": 41,
+  "speed": 0.07,
+  "note": "Artificial clock fixture; board cleared every second; no real uninterrupted survival claim"
+}

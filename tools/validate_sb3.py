@@ -149,6 +149,16 @@ def validate_sb3_structure(sb3_path: str) -> Tuple[bool, List[str], Dict[str, An
             svg = zf.read(costume["md5ext"]).decode("utf-8")
             assert "楽しんでください" in svg and "by バスケス・ライアン" in svg
             assert 'width="480" height="360"' in svg
+            root = ET.fromstring(svg)
+            ns = {"s": "http://www.w3.org/2000/svg"}
+            credit = [e for e in root.findall("s:text", ns) if e.text in {"楽しんでください", "by バスケス・ライアン"}]
+            assert [(e.get("x"), e.get("y"), e.get("font-size")) for e in credit] == [("32", "314", "8"), ("70", "332", "8")]
+            emoji = next(e for e in root.findall("s:g", ns) if e.get("aria-label") == "👍")
+            assert emoji.get("transform") == "translate(97 306) scale(0.25)"
+            emoji_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "credits", "1f44d.svg")
+            expected_paths = ET.parse(emoji_file).getroot()
+            assert [e.attrib for e in emoji] == [e.attrib for e in expected_paths]
+
         logs.append("[PASS] Firma japonesa presente en ambos fondos y exactamente los siete WAV autorizados registrados en Scratch.")
 
         total_blocks = 0

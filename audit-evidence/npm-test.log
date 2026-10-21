@@ -1,0 +1,96 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> node tools/test_runtime.cjs
+
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Fondo_Arcade
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Fondo_Caos
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_1_I
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_2_O
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_3_T
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_4_S
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_5_Z
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_6_J
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_7_L
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_8_Flash
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Bloque_Fantasma
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_0
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_1
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_2
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_3
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_4
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_5
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_6
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_7
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_8
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_9
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_NORMAL
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_HARD
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_CHAOS
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_NONE
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_DIFFICULT PIECES
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_SPEED BURST
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  HUD_GARBAGE INCOMING
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  f87a0197b976ddefc469e00fdecb3170.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  fc22980892a0dca72a59324151051feb.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  79d7f377e7be0de815a4bbc1f90c9f20.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  c452ffbeddf9c6b5c862d41e2dbfbd31.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  368d3f69ffb98d722998d796959c17dc.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  d723b794c8489981208f844eae33f845.wav
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Linea_1
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Linea_2
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Linea_3
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Linea_4
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Menu_Principal
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  Pausa_Modal
+[90mvm [39m[33mwarn[39m No rendering module present; cannot load costume:  GameOver_Modal
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  4f420dffb90d7808b5474ad265d1a58c.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  3ef36bdf9d4e77bc9f9c198a06e1d33d.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  d234820ff372e9560575ceead8d2cc78.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  ec245d9d7f9b489bc6700822ac6f6eba.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  49ab995cd20d2c27b58ee1515ea2c4cc.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  23930c7269ba2a34681529476e4ab235.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  42b5cae8bc09a7aa7af9541ad29d46aa.wav
+[90mvm [39m[33mwarn[39m No audio engine present; cannot load sound asset:  dadf02f2940d8151621dfc396b98a8ba.wav
+Translation for "pen.categoryName" in "en" is missing
+Translation for "pen.clear" in "en" is missing
+Translation for "pen.stamp" in "en" is missing
+Translation for "pen.penDown" in "en" is missing
+Translation for "pen.penUp" in "en" is missing
+Translation for "pen.setColor" in "en" is missing
+Translation for "pen.changeColorParam" in "en" is missing
+Translation for "pen.setColorParam" in "en" is missing
+Translation for "pen.changeSize" in "en" is missing
+Translation for "pen.setSize" in "en" is missing
+Translation for "pen.setShade" in "en" is missing
+Translation for "pen.changeShade" in "en" is missing
+Translation for "pen.setHue" in "en" is missing
+Translation for "pen.changeHue" in "en" is missing
+Translation for "pen.colorMenu.color" in "en" is missing
+Translation for "pen.colorMenu.saturation" in "en" is missing
+Translation for "pen.colorMenu.brightness" in "en" is missing
+Translation for "pen.colorMenu.transparency" in "en" is missing
+{
+  "pass": true,
+  "results": {
+    "NORMAL": {
+      "configured": 0.65,
+      "observedMedian": 0.662,
+      "locks": 1,
+      "wallSeconds": 20.1
+    },
+    "HARD": {
+      "configured": 0.3,
+      "observedMedian": 0.308,
+      "locks": 3,
+      "wallSeconds": 20.1
+    },
+    "CHAOS": {
+      "configured": 0.23,
+      "observedMedian": 0.245,
+      "locks": 5,
+      "wallSeconds": 20.1
+    }
+  },
+  "interaction": "pause/resume, arrows, rotate, hold, hard/soft drop, restart, modes, chaos events, garbage"
+}

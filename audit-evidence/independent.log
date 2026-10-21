@@ -1,0 +1,29 @@
+PASS: project.json identical except Stage costume hashes; all other packed assets byte-identical
+PASS collision oracle 28224
+PASS consecutive rotations 2100
+PASS 700 draws / 100 bags
+PASS bot stress locks 896 top-out restarts 69
+PASS 400 level-boundary/clear/sound fixtures
+{
+  "NB-AUDIT-001": {
+    "empty_hold_blocked_spawn_sounds": [
+      "Sonido_Hold",
+      "Sonido_GameOver",
+      "Sonido_GameOver"
+    ]
+  },
+  "NB-AUDIT-002": {
+    "before_speed": 0.10192,
+    "after_speed": 0.20383041663823379,
+    "event_end": 30,
+    "current_time": 23.11
+  },
+  "NB-AUDIT-003": {
+    "swapped_piece_row_after_20ms": 3,
+    "gravity": 0.65
+  },
+  "NB-AUDIT-004": {
+    "garbage_gameover_sounds": []
+  }
+}
+PASS all blocks reachable from event hats via calls (broadcast hats treated as roots)

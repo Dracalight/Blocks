@@ -1,0 +1,72 @@
+[
+  {
+    "file": "assets/sfx/07_line_clear_1.wav",
+    "rate": 44100,
+    "seconds": 0.56,
+    "sampleCount": 24696,
+    "channels": 1,
+    "sampleWidth": 2,
+    "peak": 19988,
+    "sha256": "0469d0612c6bf38310f348fb8a0bdb5533e11e2a852e562a39e8f9a6232bafcb"
+  },
+  {
+    "file": "assets/sfx/08_line_clear_2.wav",
+    "rate": 44100,
+    "seconds": 0.66,
+    "sampleCount": 29106,
+    "channels": 1,
+    "sampleWidth": 2,
+    "peak": 21626,
+    "sha256": "dfa432c9d3f82380546f3f8efc5480822fc89b749d3dcf7170a3f131b903758e"
+  },
+  {
+    "file": "assets/sfx/09_line_clear_3.wav",
+    "rate": 44100,
+    "seconds": 0.79,
+    "sampleCount": 34839,
+    "channels": 1,
+    "sampleWidth": 2,
+    "peak": 22937,
+    "sha256": "0203bbbe9d02188a66e2bf39ee92da67e4bbbc53393b73972ec2ef279b862f33"
+  },
+  {
+    "file": "assets/sfx/10_tetris_4.wav",
+    "rate": 44100,
+    "seconds": 1.13,
+    "sampleCount": 49833,
+    "channels": 1,
+    "sampleWidth": 2,
+    "peak": 26214,
+    "sha256": "0c3c4cce43d0d9dbcbe5f68b48d66bf1273da76bfc8b7f57203c855da4ad9c69"
+  },
+  {
+    "file": "assets/sfx/11_chaos_warning.wav",
+    "rate": 44100,
+    "seconds": 0.56,
+    "sampleCount": 24696,
+    "channels": 1,
+    "sampleWidth": 2,
+    "peak": 18022,
+    "sha256": "66420f3046dac1dc1115081bcb2670cc0c57f1fe11e198535bb2f57c67c20ce1"
+  },
+  {
+    "file": "assets/sfx/12_level_up.wav",
+    "rate": 44100,
+    "seconds": 0.82,
+    "sampleCount": 36162,
+    "channels": 1,
+    "sampleWidth": 2,
+    "peak": 22609,
+    "sha256": "1fdf36083436a82f9e237d4def6704f8d986ead0654c7c0e8aad10d1972469c5"
+  },
+  {
+    "file": "assets/sfx/13_game_start.wav",
+    "rate": 44100,
+    "seconds": 0.69,
+    "sampleCount": 30429,
+    "channels": 1,
+    "sampleWidth": 2,
+    "peak": 20316,
+    "sha256": "01bfe674828fe968d72c55b23345fe1a46c782d47acddf42ffaa10e9ee6f0e63"
+  }
+]

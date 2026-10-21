@@ -1,0 +1,25 @@
+============================================================================
+RESULTADOS DE VALIDACIÓN Y PRUEBAS — NEXUS BLOCKS: ENDLESS (.SB3)
+============================================================================
+[PASS] Archivo ZIP válido con project.json (50 archivos internos).
+[PASS] 49 activos (disfraces SVG y sonidos WAV) verificados con hash MD5 y formato íntegro.
+[PASS] Firma japonesa presente en ambos fondos y exactamente los siete WAV autorizados registrados en Scratch.
+[PASS] 1221 bloques Scratch 3 validados: 0 bloques huérfanos, 100% opcodes oficiales, enlaces padre/hijo consistentes.
+[PASS] Prueba 1 (Sistema 7-Bag): 21 extracciones seguidas verificadas en 3 bolsas exactas [1, 7, 4, 3, 2, 5, 6] sin repeticiones prematuras.
+[PASS] Prueba 2 (Movimiento contra paredes): Las 7 piezas se detienen exactamente en los bordes (cols 1..10) sin salirse del tablero.
+[PASS] Prueba 3 (Rotaciones y Wall Kicks): Wall Kick corrige posición junto a paredes y bloquea giros imposibles entre obstáculos.
+[PASS] Prueba 4 (Colisiones al descender, Fantasma y Hard Drop): Cálculo exacto de aterrizaje, puntuación de caída y fijación en Tablero.
+[PASS] Prueba 5 (Eliminación de 1, 2, 3 y 4 líneas): Limpieza simultánea, 100/300/500/800 pts y sonido único correcto por jugada.
+[PASS] Progresión: sube un nivel al alcanzar cada 10 líneas y dispara una sola vez 12_level_up sin cambiar la puntuación base de esa limpieza.
+[PASS] Prueba 6 (Sistema Hold): Guardado, intercambio y prevención de doble cambio en el mismo turno verificados.
+[PASS] Prueba 7 (Detección de Game Over y Reinicio): Fin de partida detectado al bloquearse la zona superior y limpieza total al reiniciar.
+[PASS] Prueba 8 (Pausa y Reanudación): Estado PAUSA bloquea entradas y detiene caída; reanudación restaura el control.
+[PASS] Tres modos: 0.65 / 0.30 / 0.23 s, aceleración y piso de 0.07 s.
+[PASS] 20 segundos inactivos: caída, fijación y siguiente pieza.
+[PASS] Chaos: aviso GARBAGE INCOMING reproduce 11_chaos_warning una vez, aunque Tick continúe ejecutándose.
+[PASS] Garbage: 9 obstáculos, un hueco y pieza activa sin colisión.
+[PASS] Garbage en spawn/superficie y top-out en hold intercambiado.
+[PASS] 150 ciclos de movimiento, giro, hold y drop.
+[PASS] Sin sprites táctiles, eventos de click ni monitores.
+============================================================================
+VEREDICTO FINAL: 100% DE LAS PRUEBAS ESTRUCTURALES Y LÓGICAS SUPERADAS.

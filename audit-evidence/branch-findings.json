@@ -1,0 +1,22 @@
+{
+  "NB-AUDIT-001": {
+    "empty_hold_blocked_spawn_sounds": [
+      "Sonido_Hold",
+      "Sonido_GameOver",
+      "Sonido_GameOver"
+    ]
+  },
+  "NB-AUDIT-002": {
+    "before_speed": 0.10192,
+    "after_speed": 0.20383041663823379,
+    "event_end": 30,
+    "current_time": 23.11
+  },
+  "NB-AUDIT-003": {
+    "swapped_piece_row_after_20ms": 3,
+    "gravity": 0.65
+  },
+  "NB-AUDIT-004": {
+    "garbage_gameover_sounds": []
+  }
+}

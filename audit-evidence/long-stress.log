@@ -1,0 +1,5 @@
+NORMAL {'simulatedSeconds': 180, 'ticks': 1800, 'topOutRestarts': 8}
+HARD {'simulatedSeconds': 180, 'ticks': 1800, 'topOutRestarts': 8}
+CHAOS {'simulatedSeconds': 180, 'ticks': 1800, 'topOutRestarts': 8}
+pauseLock PASS 10 simulated seconds paused; lock after resume
+nearFullGarbage PASS 100 attacks; 50 expected top-outs

@@ -163,8 +163,14 @@ def make_stage_backdrop_svg(border_color="#31435A", subtitle="KEYBOARD ARCADE"):
     grid += ''.join(f'<path d="M165 {30+r*15}H315" stroke="#152033"/>' for r in range(1,20))
     labels = [(80,60,"HOLD"),(80,160,"SCORE"),(400,60,"NEXT"),(400,160,"LEVEL"),(400,218,"LINES"),(400,276,"MODE")]
     text = ''.join(f'<text x="{x}" y="{y}" text-anchor="middle" fill="#8B9CB5" font-family="sans-serif" font-size="10" letter-spacing="2">{t}</text>' for x,y,t in labels)
-    # A tiny vector thumbs-up avoids depending on emoji font support in Scratch's SVG renderer.
-    signature = '''<text x="42" y="308" text-anchor="start" fill="#70829D" font-family="sans-serif" font-size="9">楽しんでください</text><path d="M114 300c2-2 3-5 4-8l1-4c.4-1.5 2.4-1.2 2.4.4v6.4h4.2c1.7 0 2.5 1.3 2.1 2.8l-1.5 7.1c-.3 1.3-1.2 2-2.5 2h-5.1c-1.5 0-2.7-.7-3.6-1.8l-2-2.4 2-4.5z" fill="#70829D"/><path d="M110 302h2v7h-2z" fill="#70829D"/><text x="80" y="326" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">by バスケス・ライアン</text>'''
+    # Twemoji 14.0.2, U+1F44D (CC BY 4.0): embed the unmodified standard
+    # emoji artwork as native SVG paths, avoiding font and external-image support.
+    emoji_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "credits", "1f44d.svg")
+    with open(emoji_path, encoding="utf-8") as source:
+        emoji_svg = source.read().strip()
+    emoji_paths = emoji_svg[emoji_svg.index(">") + 1:emoji_svg.rindex("</svg>")]
+    signature = f'''<desc>Thumbs up: Twemoji 14.0.2 by Twitter, Inc. and other contributors; CC BY 4.0; https://creativecommons.org/licenses/by/4.0/ ; https://github.com/twitter/twemoji/blob/v14.0.2/assets/svg/1f44d.svg ; scaled to 9 px.</desc><text x="32" y="314" text-anchor="start" fill="#70829D" font-family="sans-serif" font-size="8">楽しんでください</text><g aria-label="👍" transform="translate(97 306) scale(0.25)">{emoji_paths}</g><text x="70" y="332" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="8">by バスケス・ライアン</text>'''
+
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#090F1B"/><rect x="163" y="28" width="154" height="304" rx="2" fill="#070B13" stroke="{border_color}"/>{grid}{text}<text x="240" y="18" text-anchor="middle" fill="#DDE7F5" font-family="sans-serif" font-size="11" letter-spacing="3">NEXUS BLOCKS</text>{signature}<text x="240" y="350" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">ARROWS MOVE / ROTATE · SPACE DROP · C HOLD · P PAUSE · R RESTART</text></svg>'''
 
 

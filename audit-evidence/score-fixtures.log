@@ -1,0 +1,2 @@
+PASS combos: cumulative 100,250,450; empty clear resets; next single gives 550
+PASS injected multiplier2: base score doubled; combo bonus retains existing formula (50, not doubled)
