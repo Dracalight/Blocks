@@ -1,0 +1,6 @@
+Fecha: 22 de octubre de 2026 (Asia/Tokyo)
+Entorno: Chrome remoto mediante CUA; URL observada: https://scratch.mit.edu/projects/editor/
+Estado visible en el árbol de accesibilidad:
+- Heading: Your Browser Does Not Support WebGL
+- Texto: This technology is needed for Scratch 3.0 to run.
+Conclusión: no se pudo abrir el editor ni importar/jugar el SB3 en esta sesión. No se alteró la configuración del navegador.
