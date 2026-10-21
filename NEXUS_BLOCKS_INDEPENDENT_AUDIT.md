@@ -59,7 +59,7 @@ La primera prueba con CairoSVG produjo cajas de sustitución para japonés por s
 
 ## 5. Pruebas de Scratch
 
-Se abrió `https://scratch.mit.edu/projects/editor/`. El árbol de accesibilidad devolvió el bloqueo **“Your Browser Does Not Support WebGL”** y el texto **“This technology is needed for Scratch 3.0 to run.”** No fue posible importar ni jugar visualmente en ese editor. No se intentó cambiar protecciones o configuración del navegador.
+Se abrió `https://scratch.mit.edu/projects/editor/` en dos entornos: el navegador inicial y un Chrome remoto. Ambos devolvieron **“Your Browser Does Not Support WebGL”** y **“This technology is needed for Scratch 3.0 to run.”** La segunda comprobación se conserva en `audit-evidence/cloud-browser-webgl.txt`. No fue posible importar ni jugar visualmente en el editor. El navegador local tampoco tenía instalado el binario de Chromium que Playwright requiere (`audit-evidence/local-browser-attempt.txt`). No se cambió ninguna protección o configuración del navegador.
 
 El proyecto sí se cargó con `scratch-vm 5.0.300` y `scratch-storage 6.2.1`, ejecutando sus bloques reales. Los avisos de falta de renderer/audio se conservan completos. Carga y ejecución del motor aprobadas; importación gráfica en editor y escucha pendientes.
 
