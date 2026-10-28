@@ -48,6 +48,9 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const intro=get('Nightmare_Intro');await delay(250);assert.equal(get('Nightmare_Intro'),intro);
   await key('p');await delay(950);assert.equal(get('Estado_Juego'),'JUGANDO');
   assert.ok(get('Velocidad_Caida')>=.07 && get('Velocidad_Caida')<=.23);
+  set('NM_Event','DOUBLE');set('NM_Warning',1);set('NM_Rows',2);set('NM_Progress',0);
+  await key(' ');assert.equal(get('NM_Event'),'NONE');
+  assert.equal(get('Tablero').slice(-20).filter(v=>Number(v)===8).length,18);
   console.log(JSON.stringify({pass:true,results,interaction:'pause/resume, arrows, rotate, hold, hard/soft drop, restart, modes, chaos events, garbage'},null,2));
  }finally{vm.quit()}
 })().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1)});

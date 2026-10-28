@@ -644,6 +644,76 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.call_proc("Actualizar_Velocidad_Y_Caos")
     assert vm.vars["Velocidad_Caida"] >= .07
     report.append("[PASS] Nightmare: intro y pausa, reanudación y límite de gravedad.")
+    # Pruebas del procesador por pieza: avisos, cancelación y duración.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=4, NM_Rows=2, Lineas_Turno=0)
+    for remaining in (3, 2, 1):
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Warning"] == remaining
+        assert not any(vm.lists["Tablero"])
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE"
+    assert sum(v == 8 for v in vm.lists["Tablero"]) == 18
+    vm.call_proc("Nightmare_OnLock")
+    assert sum(v == 8 for v in vm.lists["Tablero"]) == 18
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=1, NM_Rows=2, NM_Progress=0, Lineas_Turno=4)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and not any(vm.lists["Tablero"])
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=1, NM_Rows=2, NM_Progress=0, Lineas_Turno=2)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 9
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Tiempo_Juego=21, Lineas_Turno=0)
+    for _ in range(6):
+        vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "DOUBLE" and vm.vars["NM_Warning"] == 4
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="JAM_WARNING", NM_Warning=2, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Jam"] == 0 and vm.vars["NM_Warning"] == 1
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Jam"] == 7
+    saved = vm.vars["Pieza_Guardada"]
+    vm.call_proc("Guardar_Hold")
+    assert vm.vars["Pieza_Guardada"] == saved and vm.vars["Puede_Guardar"] == 1
+    for remaining in range(6, -1, -1):
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Jam"] == remaining
+    vm.call_proc("Guardar_Hold")
+    assert vm.vars["Puede_Guardar"] == 0
+    for lines, expected_rows in [(0,2),(1,2),(2,1),(3,1),(4,0)]:
+        vm.call_proc("Iniciar_Partida")
+        vm.vars.update(NM_Event="DEBT", NM_Warning=12, NM_Rows=2, NM_Progress=0, Lineas_Turno=lines)
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Rows"] == expected_rows
+        assert vm.vars["NM_Event"] == ("NONE" if expected_rows == 0 else "DEBT")
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DEBT", NM_Warning=12, NM_Rows=2, NM_Progress=0, Lineas_Turno=1)
+    vm.call_proc("Nightmare_OnLock")
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Rows"] == 1 and vm.vars["NM_Progress"] == 0
+    vm.call_proc("Alternar_Pausa")
+    frozen = (vm.vars["NM_Event"], vm.vars["NM_Warning"], vm.vars["NM_Rows"])
+    vm.sim_timer += 1
+    vm.call_proc("Tick")
+    assert frozen == (vm.vars["NM_Event"], vm.vars["NM_Warning"], vm.vars["NM_Rows"])
+    vm.call_proc("Iniciar_Partida")
+    assert vm.vars["NM_Event"] == "NONE" and vm.vars["NM_Rows"] == 0 and vm.vars["NM_Jam"] == 0
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DEBT", NM_Warning=12, NM_Rows=2, NM_Progress=0, Lineas_Turno=0)
+    for _ in range(12):
+        vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "DOUBLE" and vm.vars["NM_Warning"] == 2
+    assert not any(vm.lists["Tablero"])
+    vm.vars["Lineas_Turno"] = 4  # la deuda vencida ya se convirtió en ataque
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Warning"] == 1 and vm.vars["NM_Rows"] == 2 and not any(vm.lists["Tablero"])
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 18
+    report.append("[PASS] Nightmare: aviso y cancelación de basura doble; Hold Jam de siete fijaciones.")
+    report.append("[PASS] Nightmare: deuda, progreso parcial, vencimiento y aviso final de dos piezas.")
     vm.vars["Modo_Juego"]="NORMAL"
     vm.call_proc("Iniciar_Partida")
     # Ejecutar el mismo Tick que invoca el hilo principal, con tiempo simulado.
