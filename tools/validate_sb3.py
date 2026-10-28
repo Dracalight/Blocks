@@ -498,6 +498,31 @@ def run_all_tests(sb3_path: str) -> List[str]:
         "[PASS] Prueba 3 (Rotaciones y Wall Kicks): Wall Kick corrige posición junto a paredes y bloquea giros imposibles entre obstáculos."
     )
 
+    # QA-ROT-T-01: el giro repetido no puede añadir celdas al fijar la T.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Pieza_Actual=3, Pieza_Rotacion=0, Pieza_Col=5, Pieza_Fila=10)
+    for _ in range(12):
+        vm.call_proc("Rotar_Pieza")
+        assert vm.vars["Rotacion_Exito"] == 1
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    occupied = {i for i, value in enumerate(vm.lists["Tablero"]) if value}
+    assert occupied == {84, 93, 94, 95}, occupied
+    assert vm.vars["Lineas"] == 0
+
+    # Una T rotada puede completar dos filas reales en la misma fijación.
+    vm.call_proc("Iniciar_Partida")
+    for row, holes in [(19, {5, 6}), (20, {5})]:
+        for col in range(1, 11):
+            if col not in holes:
+                vm.lists["Tablero"][(row - 1) * 10 + col - 1] = 8
+    vm.vars.update(Pieza_Actual=3, Pieza_Rotacion=0, Pieza_Col=5, Pieza_Fila=16)
+    vm.call_proc("Rotar_Pieza")
+    assert vm.vars["Pieza_Rotacion"] == 1 and vm.vars["Rotacion_Exito"] == 1
+    vm.call_proc("Caida_Instantanea")
+    assert vm.vars["Lineas_Turno"] == 2 and vm.vars["Lineas"] == 2
+    assert sum(1 for value in vm.lists["Tablero"] if value) == 1
+    report.append("[PASS] QA-ROT-T-01: giros repetidos fijan cuatro minos; doble limpieza legítima con T rotada.")
+
     vm.call_proc("Iniciar_Partida")
     vm.vars["Pieza_Actual"] = 2
     vm.vars["Pieza_Col"] = 5
