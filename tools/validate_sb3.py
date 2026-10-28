@@ -853,7 +853,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
         vm.sim_timer += .1; vm.call_proc("Tick")
     assert (vm.vars["Estado_Juego"],vm.vars["Trial_Wave"],vm.vars["Trial_Goal"]) == ("JUGANDO",2,25)
     vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=5,Trial_Count=39,Trial_Goal=40,
-                   Trial_Event=3,Trial_Required=3,NM_Event="NONE",NM_Jam=0)
+                   Trial_Event=3,Trial_Required=3,NM_Event="NONE",NM_Jam=0,Trial_GlitchDone=1)
     vm.call_proc("Trial_OnLock")
     assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
     vm.call_proc("Comenzar_Modo")
@@ -873,11 +873,75 @@ def run_all_tests(sb3_path: str) -> List[str]:
         else:
             vm.lists["Tablero"] = [0] * 200  # fixture, no partida real
             vm.vars["Lineas_Turno"] = 0
+            if vm.vars["Trial_Wave"] == 5 and vm.vars["Trial_Count"] >= 36:
+                vm.vars["Trial_GlitchDone"] = 1  # el microjuego se prueba por separado
             vm.call_proc("Nightmare_OnLock")
             assert vm.vars["Estado_Juego"] == "JUGANDO"
             vm.call_proc("Trial_OnLock")
     assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR" and seen_waves == {1,2,3,4,5}
     report.append("[PASS] Trials: once hitos, ataque pendiente, pausa, avance, victoria y reinicio.")
+    # Activación real tras una fijación en Core, con el tablero y sus relojes
+    # congelados durante el protocolo y la pausa.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Trial_Wave=5,Trial_Count=35,Trial_Event=3,Trial_Required=3,Trial_Goal=40,
+                   Trial_GlitchDone=0,NM_Event="NONE",NM_Jam=0,Tiempo_Juego=70,
+                   Pieza_Actual=2,Pieza_Rotacion=0,Pieza_Col=5,Pieza_Fila=10)
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Estado_Juego"] == "GLITCH_INTRO"
+    frozen_board=list(vm.lists["Tablero"])
+    frozen_times=(vm.vars["Tiempo_Juego"],vm.vars["Reloj_Caida"],vm.vars["Bloqueo"])
+    for _ in range(10): vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["Estado_Juego"] == "GLITCH_PLAY"
+    vm.call_proc("Glitch_Move %s %s",6,0); assert vm.vars["G_X"] == 6
+    vm.call_proc("Alternar_Pausa"); frozen_core=(vm.vars["G_Time"],vm.vars["G_X"],vm.vars["G_HP"])
+    vm.sim_timer += 1; vm.call_proc("Tick"); vm.call_proc("Glitch_Move %s %s",6,0)
+    assert frozen_core == (vm.vars["G_Time"],vm.vars["G_X"],vm.vars["G_HP"])
+    assert frozen_board == vm.lists["Tablero"] and frozen_times == (vm.vars["Tiempo_Juego"],vm.vars["Reloj_Caida"],vm.vars["Bloqueo"])
+    vm.call_proc("Alternar_Pausa")
+    # Un punto de impacto para cada patrón; la invulnerabilidad evita dobles golpes.
+    for phase,x,y in [(0,0,0),(1,0,0),(2,0,0),(3,-27,35),(4,-27,25)]:
+        vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=phase+.4,G_PrevPhase=phase,
+                       G_X=x,G_Y=y,G_TargetX=0,G_TargetY=0,G_HP=3,G_Invuln=0,Delta=0)
+        vm.call_proc("Glitch_Advance"); assert vm.vars["G_HP"] == 3 and vm.vars["G_Active"] == 0, phase
+        vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=phase+.7,G_PrevPhase=phase,
+                       G_X=x,G_Y=y,G_TargetX=0,G_TargetY=0,G_HP=3,G_Invuln=0,Delta=0)
+        vm.call_proc("Glitch_Advance"); assert vm.vars["G_HP"] == 2, phase
+        vm.call_proc("Glitch_Advance"); assert vm.vars["G_HP"] == 2, phase
+    # Ruta de referencia con pasos de 6 px cada 50 ms; no demuestra balance
+    # en hardware real ni prueba todas las posiciones de inicio posibles.
+    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=0,G_PrevPhase=-1,G_X=0,G_Y=-45,G_HP=3,G_Invuln=0)
+    for _ in range(105):
+        if vm.vars["Estado_Juego"] != "GLITCH_PLAY": break
+        phase=int(vm.vars["G_Time"]); inner=vm.vars["G_Time"]-phase
+        if phase == 1 and .05 < inner < .45 and vm.vars["G_X"] < 30:
+            vm.call_proc("Glitch_Move %s %s",6,0)
+        if phase == 3 and .05 < inner < .55 and vm.vars["G_Y"] < -3:
+            vm.call_proc("Glitch_Move %s %s",0,6)
+        vm.vars["Delta"] = .05; vm.call_proc("Glitch_Advance")
+    assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 1 and vm.vars["G_HP"] == 3
+    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=4.99,G_HP=1,Delta=.05)
+    score_before=vm.vars["Puntuacion"]; vm.call_proc("Glitch_Advance")
+    assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 1
+    for _ in range(8):
+        vm.sim_timer += .1; vm.call_proc("Tick")
+        if vm.vars["Estado_Juego"] == "JUGANDO": break
+    assert vm.vars["Estado_Juego"] == "JUGANDO" and vm.vars["Puntuacion"] == score_before+100
+    assert vm.vars["Trial_GlitchDone"] == 1 and vm.lists["Tablero"] == frozen_board
+    assert frozen_times == (vm.vars["Tiempo_Juego"],vm.vars["Reloj_Caida"],vm.vars["Bloqueo"])
+    vm.vars.update(Trial_Count=39,Trial_Event=3,Trial_Required=3,Trial_Goal=40,
+                   Pieza_Actual=2,Pieza_Rotacion=0,Pieza_Col=5,Pieza_Fila=4)
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
+    # Fallar anuncia la penalización una sola vez; reiniciar elimina el estado.
+    vm.call_proc("Glitch_Begin")
+    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=.7,G_PrevPhase=0,G_X=0,G_Y=0,G_HP=1,G_Invuln=0,Delta=0)
+    vm.call_proc("Glitch_Advance"); assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 0
+    for _ in range(8):
+        vm.sim_timer += .1; vm.call_proc("Tick")
+        if vm.vars["Estado_Juego"] == "JUGANDO": break
+    assert (vm.vars["NM_Event"],vm.vars["NM_Rows"],vm.vars["NM_Warning"]) == ("DOUBLE",2,2)
+    vm.call_proc("Iniciar_Partida"); assert vm.vars["NM_Event"] == "NONE" and vm.vars["Trial_GlitchDone"] == 0
+    report.append("[PASS] Glitch: cinco colisiones, invulnerabilidad, pausa, retorno y resolución única.")
     vm.vars["NM_Submode"]="ENDLESS"
     vm.vars["Modo_Juego"]="NORMAL"
     vm.sim_timer=0  # el siguiente fixture usa un origen temporal nuevo

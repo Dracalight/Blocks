@@ -17,7 +17,7 @@ Open the [official Scratch editor](https://scratch.mit.edu/projects/editor/), ch
 
 The original three modes are endless. Gravity runs without keyboard input. The technical minimum is 0.07 seconds / row; this is a configured floor, not an iPad performance guarantee. Pieces lock after 0.35 seconds on a surface. Pause freezes gravity, lock delay and Chaos deadlines.
 
-This development branch also contains an **unfinished NIGHTMARE** mode. Press **4** in the menu, then press **4** again to switch between ENDLESS and TRIALS. Trials uses five waves with lock goals of 20, 25, 30, 35 and 40 pieces, with scripted threats; it keeps the board between waves and waits for committed threats to finish. Glitch Protocol and the full audiovisual work are not yet implemented. See [development status](docs/NIGHTMARE_PROGRESS.md); this branch is not ready to merge.
+This development branch also contains an **unfinished NIGHTMARE** mode. Press **4** in the menu, then press **4** again to switch between ENDLESS and TRIALS. Trials uses five waves with lock goals of 20, 25, 30, 35 and 40 pieces, with scripted threats; it keeps the board between waves and waits for committed threats to finish. Glitch Protocol is an initial five-pattern dodge challenge; audiovisual polish, visual QA and playtesting remain incomplete. See [development status](docs/NIGHTMARE_PROGRESS.md); this branch is not ready to merge.
 
 ## Keyboard
 

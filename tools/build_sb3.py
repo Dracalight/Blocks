@@ -85,6 +85,11 @@ def build_sound_assets() -> Dict[str, Dict[str, Any]]:
         ],
         "Sonido_Hold": [(440.0, 0.045, "sine"), (587.33, 0.055, "sine")],
         "Sonido_Caos": [(392.0, 0.07, "square"), (311.13, 0.07, "square"), (587.33, 0.11, "square")],
+        "Sonido_NMWarning": [(196.0,0.07,"square"),(0,0.025,"sine"),(293.66,0.10,"triangle")],
+        "Sonido_Armor": [(640.0,0.035,"square"),(320.0,0.085,"sweep_down")],
+        "Sonido_GlitchFire": [(720.0,0.07,"sweep_down")],
+        "Sonido_GlitchHit": [(180.0,0.10,"square"),(110.0,0.09,"sweep_down")],
+        "Sonido_GlitchWin": [(440.0,0.07,"triangle"),(659.25,0.07,"triangle"),(880.0,0.13,"sine")],
         "Sonido_GameOver": [
             (440.0, 0.12, "triangle"),
             (392.0, 0.12, "triangle"),
@@ -804,9 +809,12 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         "NM_Progress":0, "NM_Jam":0, "NM_Cooldown":0, "NM_Sequence":0, "NM_Cancelable":1,
                         "NM_Chain":0, "NM_EventStart":"NONE", "NM_Top":0, "NM_Scan":1, "NM_Delayed":0,
                         "Armor_Row":0, "Armor_Hit":0, "NM_Submode":"ENDLESS", "Trial_Wave":1,
-                        "Trial_Count":0, "Trial_Event":0, "Trial_Goal":20, "Trial_Timer":0, "Trial_Required":1}.items():
+                        "Trial_Count":0, "Trial_Event":0, "Trial_Goal":20, "Trial_Timer":0, "Trial_Required":1,
+                        "Trial_GlitchDone":0, "G_Timer":0, "G_Time":0, "G_Phase":0, "G_PrevPhase":-1,
+                        "G_Inner":0, "G_X":0, "G_Y":-45, "G_TargetX":0, "G_TargetY":0,
+                        "G_HP":3, "G_Invuln":0, "G_Hit":0, "G_Pos":0, "G_Next":60, "G_Success":0, "G_Active":0, "G_Radius":0, "G_SoundedPhase":-1, "NM_Reduced":0}.items():
         var_specs[name] = ("v2_"+name, value)
-    for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "4", "enter"]:
+    for key in ["left", "right", "down", "up", "space", "c", "p", "r", "m", "1", "2", "3", "4", "enter"]:
         var_specs["key_"+key] = ("v2_key_"+key, 0)
         var_specs["repeat_"+key] = ("v2_repeat_"+key, 0)
     var_map = {k: v[0] for k, v in var_specs.items()}
@@ -922,10 +930,30 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         motor_costumes.append({k: v for k, v in casset.items() if k != "bytes"})
 
     # HUD vectorial: cifras y estados estampados, sin monitores de variables.
-    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","ENDLESS","TRIALS","WAVE","/","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED","ARMOR INCOMING"]:
+    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","ENDLESS","TRIALS","WAVE","/","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED","ARMOR INCOMING","SIGNAL BEAM","TARGET MARKER","PULSE RING","SWEEP WALL","DATA FRAGMENTS","CHARGE","ACTIVE","CORE HP","MOTION LOW"]:
         safe_label = label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{safe_label}</text></svg>',65,12)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
+        motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
+
+    glitch_svgs = {
+        "G_ARENA": '<svg xmlns="http://www.w3.org/2000/svg" width="130" height="130"><rect x="2" y="2" width="126" height="126" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M32 3V127 M65 3V127 M98 3V127 M3 32H127 M3 65H127 M3 98H127" stroke="#F5F2E9" stroke-opacity=".18"/></svg>',
+        "G_CORE": '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M7 1L13 7 7 13 1 7Z" fill="#F5F2E9" stroke="#FFBC32"/></svg>',
+        "G_CORE_HIT": '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M7 1L13 7 7 13 1 7Z" fill="#101010" stroke="#FFBC32" stroke-width="2"/></svg>',
+        "G_BEAM_WARN": '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12"><rect x="1" y="1" width="118" height="10" fill="none" stroke="#FFBC32" stroke-dasharray="5 3"/></svg>',
+        "G_BEAM_FIRE": '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12"><rect width="120" height="12" fill="#FFBC32"/><path d="M0 6H120" stroke="#101010"/></svg>',
+        "G_TARGET": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect x="2" y="2" width="26" height="26" fill="none" stroke="#FFBC32" stroke-width="2"/><path d="M15 0V30 M0 15H30" stroke="#F5F2E9"/></svg>',
+        "G_TARGET_FIRE": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="30" height="30" fill="#FFBC32"/><path d="M15 0V30 M0 15H30" stroke="#101010" stroke-width="2"/></svg>',
+        "G_RING": '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><circle cx="36" cy="36" r="30" fill="#FFBC32" fill-opacity=".28" stroke="#FFBC32" stroke-width="2"/></svg>',
+        "G_RING_WARN": '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><circle cx="36" cy="36" r="30" fill="#FFBC32" fill-opacity=".1" stroke="#FFBC32" stroke-width="2" stroke-dasharray="5 4"/></svg>',
+        "G_FRAGMENT": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><path d="M2 2H28V28H2Z M3 3L27 27" fill="none" stroke="#FFBC32" stroke-width="2"/></svg>',
+        "G_WALL": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="120"><path d="M1 0H29V43H1Z M1 77H29V120H1Z" fill="#FFBC32"/><path d="M1 46V74 M29 46V74" stroke="#F5F2E9" stroke-dasharray="3 2"/></svg>',
+        "G_WALL_WARN": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="120"><path d="M1 1H29V43H1Z M1 77H29V119H1Z" fill="none" stroke="#FFBC32" stroke-width="2" stroke-dasharray="5 3"/><path d="M1 46V74 M29 46V74" stroke="#F5F2E9" stroke-dasharray="3 2"/></svg>',
+        "G_FRAGMENT_FIRE": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect x="1" y="1" width="28" height="28" fill="#FFBC32"/><path d="M3 3L27 27" stroke="#101010" stroke-width="2"/></svg>',
+    }
+    for name, svg in glitch_svgs.items():
+        size = {"G_ARENA":(65,65),"G_BEAM_WARN":(60,6),"G_BEAM_FIRE":(60,6),"G_TARGET":(15,15),"G_TARGET_FIRE":(15,15),"G_RING":(36,36),"G_RING_WARN":(36,36),"G_WALL":(15,60),"G_WALL_WARN":(15,60),"G_FRAGMENT":(15,15),"G_FRAGMENT_FIRE":(15,15)}.get(name,(7,7))
+        asset = register_svg_asset(name,svg,*size); all_zip_files[asset["md5ext"]]=asset["bytes"]
         motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
 
     motor_sounds = [
@@ -938,6 +966,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             "Sonido_Hold",
             "Sonido_Caos",
             "Sonido_GameOver",
+            "Sonido_NMWarning", "Sonido_Armor", "Sonido_GlitchFire", "Sonido_GlitchHit", "Sonido_GlitchWin",
         )
     ]
 
@@ -1263,13 +1292,16 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_switch_costume(mb.op_join("HUD_","$v:Modo_Juego")),mb.stmt_goto_xy(160,-116),mb.stmt_pen_stamp(),
             mb.stmt_if(mb.op_not(mb.op_eq("$v:Evento_Caos","NONE")),[mb.stmt_switch_costume(mb.op_join("HUD_","$v:Evento_Caos")),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
             mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
-                mb.stmt_switch_costume(mb.op_join("HUD_","$v:NM_Submode")),mb.stmt_goto_xy(160,-137),mb.stmt_pen_stamp(),
+                # Compact Nightmare HUD: fixed sizes keep labels and numbers inside
+                # their columns even when the game is displayed on a 480x360 stage.
+                mb.stmt_set_size(70),
+                mb.stmt_switch_costume(mb.op_join("HUD_","$v:NM_Submode")),mb.stmt_goto_xy(160,-130),mb.stmt_pen_stamp(),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_not(mb.op_eq("$v:Estado_Juego","MENU"))),[
-                    mb.stmt_switch_costume("HUD_WAVE"),mb.stmt_goto_xy(122,-155),mb.stmt_pen_stamp(),
-                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Wave",145,-155],True),
-                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Count",181,-155],True),
-                    mb.stmt_switch_costume("HUD_/"),mb.stmt_goto_xy(192,-155),mb.stmt_pen_stamp(),
-                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Goal",220,-155],True)]),
+                    mb.stmt_switch_costume("HUD_WAVE"),mb.stmt_goto_xy(112,-146),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Wave",138,-146],True),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Count",176,-146],True),
+                    mb.stmt_switch_costume("HUD_/"),mb.stmt_goto_xy(188,-146),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Goal",216,-146],True)]),
                 mb.stmt_if(mb.op_eq("$v:NM_Event","DOUBLE"),[
                     mb.stmt_switch_costume("HUD_DOUBLE GARBAGE"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
                     mb.stmt_switch_costume("HUD_ROWS"),mb.stmt_goto_xy(-194,-87),mb.stmt_pen_stamp(),
@@ -1304,7 +1336,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Jam",-127,40],True)]),
                 mb.stmt_if(mb.op_eq("$v:NM_Chain",1),[mb.stmt_switch_costume("HUD_CHAIN: DOUBLE > JAM"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
                 mb.stmt_if(mb.op_eq("$v:NM_Chain",2),[mb.stmt_switch_costume("HUD_CHAIN: JAM > DEBT"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
-                mb.stmt_if(mb.op_eq("$v:NM_Delayed",1),[mb.stmt_switch_costume("HUD_PRESSURE DELAYED"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()])]),
+                mb.stmt_if(mb.op_eq("$v:NM_Delayed",1),[mb.stmt_switch_costume("HUD_PRESSURE DELAYED"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Reduced",1),mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_and(mb.op_eq("$v:NM_Jam",0),mb.op_eq("$v:NM_Delayed",0)))),
+                    [mb.stmt_switch_costume("HUD_MOTION LOW"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
+                mb.stmt_set_size(100)]),
             mb.stmt_hide(),
         ],
         x=560,
@@ -1444,6 +1479,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     ),
                 ],
             ),
+            mb.stmt_if(mb.op_gt("$v:Armor_Hit",0),[mb.stmt_play_sound("Sonido_Armor")]),
             mb.stmt_if_else(
                 mb.op_gt("$v:Lineas_Turno", 0),
                 [
@@ -1544,7 +1580,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             ),
             mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq("$v:Estado_Juego","JUGANDO")),
                 [mb.stmt_call_proc("Nightmare_OnLock", [], [], True),
-                 mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_call_proc("Trial_OnLock", [], [], True)])]),
+                 mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_call_proc("Trial_OnLock", [], [], True)]),
+                 mb.stmt_if(mb.op_and(mb.op_and(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0))),
+                    mb.op_or(mb.op_and(mb.op_eq("$v:NM_Submode","ENDLESS"),mb.op_gt("$v:Tiempo_Juego","$v:G_Next")),
+                        mb.op_and(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Trial_Wave",5)),mb.op_and(mb.op_gt("$v:Trial_Count",35),mb.op_eq("$v:Trial_GlitchDone",0))))),
+                    [mb.stmt_call_proc("Glitch_Begin",[],[],True)])]),
             mb.stmt_call_proc(proc_render_code, [], [], True),
         ],
         x=1100,
@@ -1797,7 +1837,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("NM_Event", "NONE"),mb.stmt_set_var("NM_Warning", 0),
             mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Progress",0),
             mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("Armor_Hit",0),
-            mb.stmt_set_var("Trial_Wave",1),mb.stmt_set_var("Trial_Count",0),mb.stmt_set_var("Trial_Event",0),mb.stmt_set_var("Trial_Goal",20),mb.stmt_set_var("Trial_Timer",0),mb.stmt_set_var("Trial_Required",1),
+            mb.stmt_set_var("Trial_Wave",1),mb.stmt_set_var("Trial_Count",0),mb.stmt_set_var("Trial_Event",0),mb.stmt_set_var("Trial_Goal",20),mb.stmt_set_var("Trial_Timer",0),mb.stmt_set_var("Trial_Required",1),mb.stmt_set_var("Trial_GlitchDone",0),mb.stmt_set_var("G_Next",60),
+            mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_Inner",0),
+            mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-45),mb.stmt_set_var("G_TargetX",0),mb.stmt_set_var("G_TargetY",0),mb.stmt_set_var("G_HP",3),
+            mb.stmt_set_var("G_Invuln",0),mb.stmt_set_var("G_Hit",0),mb.stmt_set_var("G_Pos",0),mb.stmt_set_var("G_Success",0),mb.stmt_set_var("G_Active",0),mb.stmt_set_var("G_Radius",0),mb.stmt_set_var("G_SoundedPhase",-1),
             mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(proc_vel_code, [], [], True),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
@@ -1836,6 +1879,61 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_if(mb.op_eq(mb.expr_list_item("Tablero","$v:NM_Scan"),8),[
                 mb.stmt_replace_item_list("Tablero","$v:NM_Scan",9)]),
             mb.stmt_change_var("NM_Scan",1)])])
+    # Glitch Protocol: todos los peligros son secuenciales; el reloj del
+    # tablero permanece congelado mientras se actualiza este estado.
+    abs_g = lambda value: mb.op_math("abs",value)
+    g_dist = lambda x,y: mb.op_add(mb.op_mul(x,x),mb.op_mul(y,y))
+    g_stamp = lambda name,x,y: [mb.stmt_switch_costume(name),mb.stmt_goto_xy(x,y),mb.stmt_pen_stamp()]
+    mb.define_proc("Glitch_Render",[],[],True,[
+        mb.stmt_pen_clear(),mb.stmt_show(),mb.stmt_set_size(100),*g_stamp("G_ARENA",0,0),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",0),[
+            mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_BEAM_WARN",0,0),g_stamp("G_BEAM_FIRE",0,0))]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",1),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_TARGET","$v:G_TargetX","$v:G_TargetY"),g_stamp("G_TARGET_FIRE","$v:G_TargetX","$v:G_TargetY"))]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",2),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_RING_WARN",0,0),
+            [mb.stmt_set_size(mb.op_mul(mb.op_div("$v:G_Radius",30),100)),*g_stamp("G_RING",0,0),mb.stmt_set_size(100)])]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",3),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_WALL_WARN","$v:G_Pos",0),g_stamp("G_WALL","$v:G_Pos",0))]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",4),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),
+            g_stamp("G_FRAGMENT","$v:G_Pos",25)+g_stamp("G_FRAGMENT",mb.op_sub(0,"$v:G_Pos"),-25),
+            g_stamp("G_FRAGMENT_FIRE","$v:G_Pos",25)+g_stamp("G_FRAGMENT_FIRE",mb.op_sub(0,"$v:G_Pos"),-25))]),
+        mb.stmt_if_else(mb.op_gt("$v:G_Invuln",0),g_stamp("G_CORE_HIT","$v:G_X","$v:G_Y"),g_stamp("G_CORE","$v:G_X","$v:G_Y")),
+        *g_stamp("HUD_CORE HP",-160,0),
+        mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:G_HP",-160,-25],True),
+        *[mb.stmt_if(mb.op_eq("$v:G_Phase",i),g_stamp("HUD_"+name,160,0)) for i,name in enumerate(["SIGNAL BEAM","TARGET MARKER","PULSE RING","SWEEP WALL","DATA FRAGMENTS"])],
+        mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("HUD_CHARGE",160,-25),g_stamp("HUD_ACTIVE",160,-25)),
+        mb.stmt_hide()])
+    mb.define_proc("Glitch_Begin",[],[],True,[
+        mb.stmt_set_var("Estado_Juego","GLITCH_INTRO"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),
+        mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-45),
+        mb.stmt_set_var("G_HP",3),mb.stmt_set_var("G_Invuln",0),mb.stmt_set_var("G_Active",0),mb.stmt_set_var("G_SoundedPhase",-1),mb.stmt_set_var("G_Next",mb.op_add("$v:Tiempo_Juego",45)),
+        mb.stmt_play_sound("Sonido_NMWarning"),mb.stmt_broadcast("Actualizar_UI")])
+    mb.define_proc("Glitch_Advance",[],[],True,[
+        mb.stmt_change_var("G_Time","$v:Delta"),
+        mb.stmt_if(mb.op_gt("$v:G_Invuln",0),[mb.stmt_change_var("G_Invuln",mb.op_sub(0,"$v:Delta"))]),
+        mb.stmt_if_else(mb.op_lt("$v:G_Time",5),[
+            mb.stmt_set_var("G_Phase",mb.op_math("floor","$v:G_Time")),
+            mb.stmt_set_var("G_Inner",mb.op_sub("$v:G_Time","$v:G_Phase")),
+            mb.stmt_if(mb.op_not(mb.op_eq("$v:G_Phase","$v:G_PrevPhase")),[
+                mb.stmt_set_var("G_PrevPhase","$v:G_Phase"),
+                mb.stmt_if(mb.op_eq("$v:G_Phase",1),[mb.stmt_set_var("G_TargetX","$v:G_X"),mb.stmt_set_var("G_TargetY","$v:G_Y")])]),
+            mb.stmt_set_var("G_Active",0),mb.stmt_set_var("G_Hit",0),mb.stmt_set_var("G_Pos",-55),
+            mb.stmt_if(mb.op_gt("$v:G_Inner",0.6),[
+                mb.stmt_set_var("G_Active",1),mb.stmt_set_var("G_Pos",mb.op_add(-55,mb.op_mul(mb.op_sub("$v:G_Inner",0.6),275))),
+                mb.stmt_if(mb.op_not(mb.op_eq("$v:G_SoundedPhase","$v:G_Phase")),[
+                    mb.stmt_set_var("G_SoundedPhase","$v:G_Phase"),mb.stmt_play_sound("Sonido_GlitchFire")]),
+                mb.stmt_set_var("G_Radius",mb.op_mul(mb.op_sub("$v:G_Inner",0.6),75)),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",0),mb.op_lt(abs_g("$v:G_Y"),6)),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",1),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_TargetX")),15),mb.op_lt(abs_g(mb.op_sub("$v:G_Y","$v:G_TargetY")),15))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",2),mb.op_lt(g_dist("$v:G_X","$v:G_Y"),mb.op_mul("$v:G_Radius","$v:G_Radius"))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",3),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),15),mb.op_gt(abs_g("$v:G_Y"),17))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",4),mb.op_or(
+                    mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),15),mb.op_lt(abs_g(mb.op_sub("$v:G_Y",25)),15)),
+                    mb.op_and(mb.op_lt(abs_g(mb.op_add("$v:G_X","$v:G_Pos")),15),mb.op_lt(abs_g(mb.op_add("$v:G_Y",25)),15)))),[mb.stmt_set_var("G_Hit",1)])]),
+            mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Hit",1),mb.op_lt("$v:G_Invuln",0.001)),[
+                mb.stmt_change_var("G_HP",-1),mb.stmt_set_var("G_Invuln",0.45),mb.stmt_play_sound("Sonido_GlitchHit")]),
+            mb.stmt_if_else(mb.op_lt("$v:G_HP",1),[
+                mb.stmt_set_var("G_Success",0),mb.stmt_set_var("Estado_Juego","GLITCH_RESULT"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI")],
+                [call("Glitch_Render")])],
+            [mb.stmt_set_var("G_Success",1),mb.stmt_set_var("Estado_Juego","GLITCH_RESULT"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI")])])
     # Un solo evento comprometido. Las cuentas avanzan únicamente al fijar pieza.
     mb.define_proc("Nightmare_OnLock",[],[],True,[
         mb.stmt_set_var("NM_EventStart","$v:NM_Event"),
@@ -1863,7 +1961,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                             [mb.stmt_set_var("NM_Chain",2),mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)])]),
                     mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",180),mb.op_eq(mb.op_mod("$v:NM_Sequence",4),2)),[
                         mb.stmt_set_var("NM_Event","ARMOR_WARNING"),mb.stmt_set_var("NM_Warning",4)]),
-                    mb.stmt_change_var("NM_Sequence",1),mb.stmt_play_sound("Sonido_Caos")])])],
+                    mb.stmt_change_var("NM_Sequence",1),mb.stmt_play_sound("Sonido_NMWarning")])])],
             [mb.stmt_if(mb.op_eq("$v:NM_EventStart","DOUBLE"),[
                 mb.stmt_if(mb.op_eq("$v:NM_Cancelable",1),[
                     mb.stmt_change_var("NM_Progress","$v:Lineas_Turno"),
@@ -1908,7 +2006,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.op_and(mb.op_eq("$v:Trial_Wave",wave),mb.op_eq("$v:Trial_Event",index)),
             mb.op_and(mb.op_gt("$v:Trial_Count",threshold-1),
                 mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0)))),
-            actions+[mb.stmt_change_var("Trial_Event",1),mb.stmt_play_sound("Sonido_Caos")])
+            actions+[mb.stmt_change_var("Trial_Event",1),mb.stmt_play_sound("Sonido_NMWarning")])
     def trial_double():
         return [mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",4),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)]
     def trial_jam():
@@ -1925,14 +2023,22 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     mb.define_proc("Trial_OnLock",[],[],True,[
         mb.stmt_change_var("Trial_Count",1),
         *[trial_trigger(wave,index,threshold,make()) for wave,index,threshold,make in trial_script],
-        mb.stmt_if(mb.op_and(mb.op_and(mb.op_gt("$v:Trial_Count",mb.op_sub("$v:Trial_Goal",1)),
+        mb.stmt_if(mb.op_and(mb.op_and(mb.op_and(mb.op_gt("$v:Trial_Count",mb.op_sub("$v:Trial_Goal",1)),
             mb.op_eq("$v:Trial_Event","$v:Trial_Required")),
-            mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0))),[
+            mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0))),
+            mb.op_or(mb.op_not(mb.op_eq("$v:Trial_Wave",5)),mb.op_eq("$v:Trial_GlitchDone",1))),[
             mb.stmt_if_else(mb.op_eq("$v:Trial_Wave",5),[
                 mb.stmt_set_var("Estado_Juego","TRIAL_CLEAR"),mb.stmt_broadcast("Actualizar_UI")],
                 [mb.stmt_set_var("Estado_Juego","TRIAL_INTERMISSION"),mb.stmt_set_var("Trial_Timer",0),mb.stmt_broadcast("Actualizar_UI")])])])
+    mb.define_proc("Glitch_Move %s %s",["gm_x","gm_y"],["dx","dy"],True,[
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[
+            mb.stmt_change_var("G_X","$a:dx"),mb.stmt_change_var("G_Y","$a:dy"),
+            mb.stmt_if(mb.op_gt("$v:G_X",55),[mb.stmt_set_var("G_X",55)]),mb.stmt_if(mb.op_lt("$v:G_X",-55),[mb.stmt_set_var("G_X",-55)]),
+            mb.stmt_if(mb.op_gt("$v:G_Y",55),[mb.stmt_set_var("G_Y",55)]),mb.stmt_if(mb.op_lt("$v:G_Y",-55),[mb.stmt_set_var("G_Y",-55)]),
+            call("Glitch_Render")])])
     mb.define_proc("Alternar_Pausa",[],[],True,[
-        mb.stmt_if_else(mb.op_or(mb.op_or(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO")),mb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION")),
+        mb.stmt_if_else(mb.op_or(mb.op_or(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO")),
+            mb.op_or(mb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),mb.op_or(mb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),mb.op_or(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),mb.op_eq("$v:Estado_Juego","GLITCH_RESULT"))))),
             [mb.stmt_set_var("Pausa_Origen","$v:Estado_Juego"),mb.stmt_set_var("Estado_Juego","PAUSA")],
             [mb.stmt_if(mb.op_eq("$v:Estado_Juego","PAUSA"),[mb.stmt_set_var("Estado_Juego","$v:Pausa_Origen")])]),
         mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),mb.stmt_broadcast("Actualizar_UI")])
@@ -1941,13 +2047,16 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
             mb.stmt_set_var("Estado_Juego","NIGHTMARE_INTRO"),mb.stmt_set_var("Nightmare_Intro",0),mb.stmt_broadcast("Actualizar_UI")])])
     key_actions = {
-        "left": ("left arrow",lambda:[call(proc_move_code,proc_move_args,[-1])],True),
-        "right": ("right arrow",lambda:[call(proc_move_code,proc_move_args,[1])],True),
-        "down": ("down arrow",lambda:[call(proc_step_code,proc_step_args,[1])],True),
-        "up": ("up arrow",lambda:[call(proc_rot_code)],False),
+        "left": ("left arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[call("Glitch_Move %s %s",["gm_x","gm_y"],[-6,0])],[call(proc_move_code,proc_move_args,[-1])])],True),
+        "right": ("right arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[call("Glitch_Move %s %s",["gm_x","gm_y"],[6,0])],[call(proc_move_code,proc_move_args,[1])])],True),
+        "down": ("down arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[mb.stmt_if(mb.op_not(mb.op_or(mb.expr_key_pressed("left arrow"),mb.expr_key_pressed("right arrow"))),[call("Glitch_Move %s %s",["gm_x","gm_y"],[0,-6])])],[call(proc_step_code,proc_step_args,[1])])],True),
+        "up": ("up arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[mb.stmt_if(mb.op_not(mb.op_or(mb.expr_key_pressed("left arrow"),mb.expr_key_pressed("right arrow"))),[call("Glitch_Move %s %s",["gm_x","gm_y"],[0,6])])],[call(proc_rot_code)])],True),
         "space": ("space",lambda:[call(proc_hard_code)],False),
         "c": ("c",lambda:[call(proc_hold_code)],False),
         "p": ("p",lambda:[call("Alternar_Pausa")],False),
+        "m": ("m",lambda:[mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+            mb.stmt_if_else(mb.op_eq("$v:NM_Reduced",0),[mb.stmt_set_var("NM_Reduced",1)],[mb.stmt_set_var("NM_Reduced",0)]),
+            mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[call(proc_render_code)])])],False),
         "r": ("r",lambda:[call("Comenzar_Modo")],False),
         "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),mb.op_eq("$v:Estado_Juego","TRIAL_CLEAR")),[call("Comenzar_Modo")])],False)}
     for key,mode in [("1","NORMAL"),("2","HARD"),("3","CHAOS")]:
@@ -1959,8 +2068,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_set_var("Modo_Juego","NIGHTMARE"),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),call(proc_render_code),mb.stmt_broadcast("Actualizar_UI")])],False)
     inputs=[]
     for key,(scratch_key,actions,repeats) in key_actions.items():
+        repeat_actions = actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.05))] if repeats else []
+        if key == "up":
+            repeat_actions = [mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),repeat_actions)]
         body=[mb.stmt_if_else(mb.op_eq("$v:key_"+key,0),actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.16 if key!="down" else 0.05))],
-            [mb.stmt_if(mb.op_gt("$b:"+mb.expr_timer(),"$v:repeat_"+key),actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.05))])] if repeats else []),mb.stmt_set_var("key_"+key,1)]
+            [mb.stmt_if(mb.op_gt("$b:"+mb.expr_timer(),"$v:repeat_"+key),repeat_actions)] if repeats else []),mb.stmt_set_var("key_"+key,1)]
         inputs.append(mb.stmt_if_else(mb.expr_key_pressed(scratch_key),body,[mb.stmt_set_var("key_"+key,0)]))
     mb.define_proc("Leer_Teclado",[],[],True,inputs)
     mb.define_proc("Tick",[],[],True,[
@@ -1980,6 +2092,19 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_set_var("Trial_Goal",mb.op_add(15,mb.op_mul(5,"$v:Trial_Wave"))),mb.stmt_set_var("Trial_Required",2),
                 mb.stmt_if(mb.op_gt("$v:Trial_Wave",3),[mb.stmt_set_var("Trial_Required",3)]),
                 mb.stmt_set_var("Estado_Juego","JUGANDO"),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI")])]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),[
+            mb.stmt_change_var("G_Timer","$v:Delta"),
+            mb.stmt_if(mb.op_gt("$v:G_Timer",0.8),[
+                mb.stmt_set_var("Estado_Juego","GLITCH_PLAY"),mb.stmt_set_var("Delta",0),call("Glitch_Render"),mb.stmt_broadcast("Actualizar_UI")])]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[call("Glitch_Advance")]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_RESULT"),[
+            mb.stmt_change_var("G_Timer","$v:Delta"),
+            mb.stmt_if(mb.op_gt("$v:G_Timer",0.65),[
+                mb.stmt_if_else(mb.op_eq("$v:G_Success",1),[mb.stmt_change_var("Puntuacion",100),mb.stmt_play_sound("Sonido_GlitchWin")],
+                    [mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",2),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",0)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Trial_Wave",5)),[mb.stmt_set_var("Trial_GlitchDone",1)]),
+                mb.stmt_set_var("repeat_left",mb.op_add("$b:"+mb.expr_timer(),0.16)),mb.stmt_set_var("repeat_right",mb.op_add("$b:"+mb.expr_timer(),0.16)),mb.stmt_set_var("repeat_down",mb.op_add("$b:"+mb.expr_timer(),0.16)),
+                mb.stmt_set_var("Estado_Juego","JUGANDO"),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI"),call(proc_render_code)])]),
         mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[
             mb.stmt_change_var("Tiempo_Juego","$v:Delta"),
             mb.stmt_if(mb.op_eq("$v:Modo_Juego","CHAOS"),[
@@ -2150,7 +2275,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     modal_trial = register_svg_asset("Trial_Intermission", make_nightmare_modal("WAVE CLEAR",["BOARD PRESERVED","NEXT WAVE INCOMING","PREPARE TO SURVIVE"]),118,84)
     modal_core = register_svg_asset("Trial_Core", make_nightmare_modal("NIGHTMARE CORE",["FINAL WAVE","COMBINED THREATS","SURVIVE 40 LOCKS"]),118,84)
     modal_victory = register_svg_asset("Trial_Clear", make_nightmare_modal("TRIAL CLEARED",["NIGHTMARE CORE","FIVE WAVES SURVIVED","ENTER TO PLAY AGAIN"]),118,84)
-    for m_asset in (modal_menu, modal_pausa, modal_gameover, modal_nightmare, modal_trial, modal_core, modal_victory):
+    modal_glitch = register_svg_asset("Glitch_Intro", make_nightmare_modal("GLITCH PROTOCOL",["ARROWS MOVE CORE","SURVIVE THE SIGNAL","NO DIAGONAL MOVEMENT"]),118,84)
+    modal_glitch_win = register_svg_asset("Glitch_Win", make_nightmare_modal("CORE STABLE",["SURVIVED","BONUS: 100","RETURNING TO BOARD"]),118,84)
+    modal_glitch_loss = register_svg_asset("Glitch_Loss", make_nightmare_modal("CORE UNSTABLE",["PROTOCOL FAILED","2 GARBAGE IN 2 LOCKS","RETURNING TO BOARD"]),118,84)
+    for m_asset in (modal_menu, modal_pausa, modal_gameover, modal_nightmare, modal_trial, modal_core, modal_victory, modal_glitch, modal_glitch_win, modal_glitch_loss):
         all_zip_files[m_asset["md5ext"]] = m_asset["bytes"]
 
     pb = ScratchBlockBuilder("pan", var_map, list_map, bcast_specs)
@@ -2161,14 +2289,17 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             pb.stmt_show(),
             # Capa visual únicamente: interpola con el reloj lógico de intro.
             pb.stmt_forever([
-                pb.stmt_if_else(pb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO"),[
+                pb.stmt_if_else(pb.op_and(pb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO"),pb.op_eq("$v:NM_Reduced",0)),[
                     pb.stmt_goto_xy(pb.op_add(-20,pb.op_mul("$v:Nightmare_Intro",25)),6),
                     pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Nightmare_Intro",12.5)))],
-                    [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),pb.op_lt("$v:Trial_Timer",0.8)),[
-                        pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:Trial_Timer",-25)),6),
-                        pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Trial_Timer",12.5)))],
-                        [pb.stmt_if(pb.op_not(pb.op_eq("$v:Estado_Juego","PAUSA")),[
-                            pb.stmt_set_size(100),pb.stmt_goto_xy(0,6)])])]),
+                    [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),pb.op_eq("$v:NM_Reduced",0)),[
+                        pb.stmt_goto_xy(pb.op_add(-20,pb.op_mul("$v:G_Timer",25)),6),
+                        pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:G_Timer",12.5)))],
+                        [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:NM_Reduced",0),pb.op_and(pb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),pb.op_lt("$v:Trial_Timer",0.8))),[
+                            pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:Trial_Timer",-25)),6),
+                            pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Trial_Timer",12.5)))],
+                            [pb.stmt_if(pb.op_not(pb.op_eq("$v:Estado_Juego","PAUSA")),[
+                                pb.stmt_set_size(100),pb.stmt_goto_xy(0,6)])])])]),
                 pb.stmt_wait(0.05)])
         ],
         x=40,
@@ -2179,7 +2310,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         [
             pb.stmt_goto_xy(0, 6),
             pb.stmt_if_else(
-                pb.op_eq("$v:Estado_Juego", "JUGANDO"),
+                pb.op_or(pb.op_eq("$v:Estado_Juego", "JUGANDO"),pb.op_eq("$v:Estado_Juego", "GLITCH_PLAY")),
                 [pb.stmt_hide()],
                 [
                     pb.stmt_show(),
@@ -2200,6 +2331,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     pb.stmt_if(pb.op_eq("$v:Estado_Juego", "TRIAL_INTERMISSION"),[
                         pb.stmt_if_else(pb.op_eq("$v:Trial_Wave",4),[pb.stmt_switch_costume("Trial_Core")],[pb.stmt_switch_costume("Trial_Intermission")])]),
                     pb.stmt_if(pb.op_eq("$v:Estado_Juego", "TRIAL_CLEAR"),[pb.stmt_switch_costume("Trial_Clear")]),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "GLITCH_INTRO"),[pb.stmt_switch_costume("Glitch_Intro")]),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "GLITCH_RESULT"),[
+                        pb.stmt_if_else(pb.op_eq("$v:G_Success",1),[pb.stmt_switch_costume("Glitch_Win")],[pb.stmt_switch_costume("Glitch_Loss")])]),
                 ],
             ),
         ],
@@ -2224,6 +2358,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             {k: v for k, v in modal_trial.items() if k != "bytes"},
             {k: v for k, v in modal_core.items() if k != "bytes"},
             {k: v for k, v in modal_victory.items() if k != "bytes"},
+            {k: v for k, v in modal_glitch.items() if k != "bytes"},
+            {k: v for k, v in modal_glitch_win.items() if k != "bytes"},
+            {k: v for k, v in modal_glitch_loss.items() if k != "bytes"},
         ],
         "sounds": [],
         "volume": 100,

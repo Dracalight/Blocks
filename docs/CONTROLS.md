@@ -4,6 +4,10 @@ Click the green flag, select **1 NORMAL**, **2 HARD** or **3 CHAOS**, and press 
 
 In the Nightmare development branch, select **4 NIGHTMARE**; press **4 again in the menu** to switch between ENDLESS and TRIALS. Press Enter to start. The selected submode remains active when restarting with R.
 
+During GLITCH PROTOCOL, the arrow keys move the geometric core. Horizontal movement takes priority if two directions are held, so there is no diagonal speed advantage. P pauses and R restarts the whole run. The board and its game clock remain frozen until the result screen completes.
+
+In Nightmare, M toggles reduced motion for the presentation transitions. Attack movement and warning indicators remain visible because they communicate gameplay.
+
 | Key | Action | Response |
 | --- | --- | --- |
 | Left Arrow | Move left | Immediate step, 160 ms initial delay, then every 50 ms. |
