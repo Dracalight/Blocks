@@ -134,10 +134,23 @@ def register_svg_asset(name: str, svg_text: str, rot_x: float, rot_y: float) -> 
 
 
 def make_creator_signature_svg(nightmare=False):
-    # Original artwork from feat/nexus-blocks-credits-sfx; the vector thumb
-    # deliberately does not depend on emoji glyph support.
+    # Keep the original credits intact in Normal, Hard and Chaos.
     signature = '''<text x="42" y="308" text-anchor="start" fill="#70829D" font-family="sans-serif" font-size="9">楽しんでください</text><path d="M114 300c2-2 3-5 4-8l1-4c.4-1.5 2.4-1.2 2.4.4v6.4h4.2c1.7 0 2.5 1.3 2.1 2.8l-1.5 7.1c-.3 1.3-1.2 2-2.5 2h-5.1c-1.5 0-2.7-.7-3.6-1.8l-2-2.4 2-4.5z" fill="#70829D"/><path d="M110 302h2v7h-2z" fill="#70829D"/><text x="80" y="326" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">by バスケス・ライアン</text>'''
-    return f'<g transform="translate(-10 -98)">{signature}</g>' if nightmare else signature
+    if not nightmare:
+        return signature
+    # Twemoji 14.0.2 U+1F44D (CC BY 4.0), embedded as vector paths so Scratch
+    # does not depend on emoji fonts or external image loading. See attribution.
+    emoji_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "emoji", "twemoji-1f44d.svg")
+    with open(emoji_path, encoding="utf-8") as source:
+        emoji_svg = source.read().strip()
+    emoji_paths = emoji_svg.partition(">")[2].rsplit("</svg>", 1)[0]
+    start, end = signature.index("<path"), signature.index('<text x="80"')
+    thumb = (f'<g id="creator-thumb-emoji" transform="translate(115 294) scale(0.34)">'
+             '<desc>Twemoji 14.0.2, Copyright 2019 Twitter, Inc and contributors; '
+             'CC BY 4.0 https://creativecommons.org/licenses/by/4.0/; '
+             'https://github.com/twitter/twemoji/blob/v14.0.2/assets/svg/1f44d.svg; '
+             'scaled and positioned.</desc>' + emoji_paths + '</g>')
+    return f'<g transform="translate(-10 -98)">{signature[:start]}{thumb}{signature[end:]}</g>'
 
 
 def make_stage_backdrop_svg(border_color="#31435A", subtitle="KEYBOARD ARCADE"):

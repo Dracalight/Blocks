@@ -20,7 +20,8 @@ No se han cambiado los parámetros de dificultad en esta pasada: modificar balan
 ## QA automático y límites
 
 - Construcción doble reproducible y validación estructural Scratch; pruebas de regresión del intérprete y planificador oficial sin renderer.
-- Firma comprobada estructuralmente en los tres fondos. El pulgar vectorial fue inspeccionado en una imagen estática. La fuente japonesa no está instalada aquí, por lo que el texto no pudo inspeccionarse visualmente.
+- Firma comprobada estructuralmente en los tres fondos. El emoji Twemoji de Nightmare se inspeccionó en un SVG estático, no en Scratch; los otros modos conservan el pulgar anterior. La fuente japonesa no está instalada aquí, por lo que el texto no pudo inspeccionarse visualmente.
+- **VISUAL_QA_PENDING:** comprobar en Scratch, preferentemente en el iPad del OWNER, que el emoji se ve a color y no se solapa con la firma ni el HUD. Inkscape no sustituye esa prueba.
 - El editor oficial informó que el navegador de pruebas no soporta WebGL. La inspección de SVG no demuestra renderizado ni composición durante una partida.
 - WAV presentes, íntegros y con duración de 0,035 a 0,66 s; no se ha escuchado el audio ni medido volumen, latencia o persistencia en el dispositivo.
 - No hay medición gráfica ni ejecución en iPad; no se garantiza rendimiento o interacción física.

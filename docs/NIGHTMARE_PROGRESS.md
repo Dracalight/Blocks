@@ -28,7 +28,7 @@ Para Glitch, las pruebas del SB3 cubren cinco colisiones, las fases de aviso sin
 
 Se utiliza el contrato design-taste-frontend aportado por el OWNER: su skill original no estaba instalada. El arte provisional usa fondo oscuro, texto claro y ámbar de advertencia, con trazos rectos y tipografía técnica.
 
-La firma procede de `make_stage_backdrop_svg()` de `feat/nexus-blocks-credits-sfx`: conserva el texto, los colores y las dos rutas del pulgar. En Nightmare se desplaza 98 px hacia arriba y 10 px a la izquierda, entre la puntuación y los avisos; en los modos originales permanece en sus coordenadas originales. La presencia y estructura se comprueban en el SB3 generado. La inspección final de las letras japonesas requiere un entorno con fuente japonesa: este entorno no tiene una instalada.
+La firma procede de `make_stage_backdrop_svg()` de `feat/nexus-blocks-credits-sfx`. En Nightmare conserva el texto y usa el emoji a color Twemoji 14.0.2, con atribución en `assets/emoji/ATTRIBUTION.md`; se desplaza 98 px hacia arriba y 10 px a la izquierda, entre la puntuación y los avisos. Los modos originales mantienen el pulgar y las coordenadas anteriores. La presencia y estructura se comprueban en el SB3 generado. La inspección final de las letras japonesas requiere un entorno con fuente japonesa: este entorno no tiene una instalada.
 
 Comprobación manual pendiente en iPad: firma y pulgar; HUD con eventos y números largos; selección de modos; teclado y pausa; fluidez y audio; M; ataques y retorno de Glitch; transiciones, objetivos y victoria de Trials/Core.
 
