@@ -157,7 +157,7 @@ def make_ghost_block_svg(size: int = 15) -> str:
 def make_modal_svg(title, line1, line2, line3, accent_hex):
     """Panel de estado informativo sin controles táctiles."""
     if title == "NEXUS BLOCKS":
-        lines = [(61,"1 — NORMAL"),(82,"2 — HARD"),(103,"3 — CHAOS"),(140,"PRESS ENTER TO START")]
+        lines = [(55,"1 — NORMAL"),(74,"2 — HARD"),(93,"3 — CHAOS"),(112,"4 — NIGHTMARE"),(145,"PRESS ENTER TO START")]
     else:
         lines = [(68,line1),(94,line2),(135,line3)]
     texts = ''.join(f'<text x="118" y="{y}" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#CFDBEA">{t}</text>' for y,t in lines)
@@ -793,9 +793,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
 
     for name, value in {"Tiempo_Juego":0, "Ultimo_Tick":0, "Delta":0, "Bloqueo":-1,
                         "Evento_Fin":0, "Proximo_Evento":12, "Proximo_Ataque":25,
-                        "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0}.items():
+                        "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0,
+                        "Nightmare_Intro":0, "Pausa_Origen":"JUGANDO"}.items():
         var_specs[name] = ("v2_"+name, value)
-    for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "enter"]:
+    for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "4", "enter"]:
         var_specs["key_"+key] = ("v2_key_"+key, 0)
         var_specs["repeat_"+key] = ("v2_repeat_"+key, 0)
     var_map = {k: v[0] for k, v in var_specs.items()}
@@ -839,7 +840,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         240,
         180,
     )
-    for asset in (bg_normal, bg_chaos):
+    bg_nightmare = register_svg_asset("Fondo_Nightmare", '''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#101010"/><rect x="164" y="29" width="152" height="302" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M12 28H148 M332 28H468 M12 332H148 M332 332H468" stroke="#FFBC32"/><g fill="#F5F2E9" font-family="monospace" font-size="11" text-anchor="middle"><text x="80" y="60">HOLD</text><text x="80" y="160">SCORE</text><text x="400" y="60">NEXT</text><text x="400" y="160">LEVEL</text><text x="400" y="218">LINES</text><text x="400" y="276">MODE</text><text x="240" y="18">NEXUS BLOCKS / NIGHTMARE</text><text x="240" y="350">ARROWS MOVE / ROTATE   SPACE DROP   C HOLD   P PAUSE   R RESTART</text></g></svg>''', 240, 180)
+    for asset in (bg_normal, bg_chaos, bg_nightmare):
         all_zip_files[asset["md5ext"]] = asset["bytes"]
 
     stage_b = ScratchBlockBuilder("stg", var_map, list_map, bcast_specs)
@@ -849,7 +851,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             stage_b.stmt_if_else(
                 stage_b.op_eq("$v:Modo_Juego", "CHAOS"),
                 [stage_b.stmt_switch_backdrop("Fondo_Caos")],
-                [stage_b.stmt_switch_backdrop("Fondo_Arcade")],
+                [stage_b.stmt_if_else(stage_b.op_eq("$v:Modo_Juego", "NIGHTMARE"),
+                    [stage_b.stmt_switch_backdrop("Fondo_Nightmare")],
+                    [stage_b.stmt_switch_backdrop("Fondo_Arcade")])],
             )
         ],
         x=50,
@@ -874,6 +878,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "costumes": [
             {k: v for k, v in bg_normal.items() if k != "bytes"},
             {k: v for k, v in bg_chaos.items() if k != "bytes"},
+            {k: v for k, v in bg_nightmare.items() if k != "bytes"},
         ],
         "sounds": [],
         "volume": 100,
@@ -905,7 +910,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         motor_costumes.append({k: v for k, v in casset.items() if k != "bytes"})
 
     # HUD vectorial: cifras y estados estampados, sin monitores de variables.
-    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING"]:
+    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING"]:
         asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{label}</text></svg>',65,12)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
         motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
@@ -1078,9 +1083,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_set_var("Velocidad_Base", 0.65),
         mb.stmt_set_var("Delta", 0.045),
         mb.stmt_if(mb.op_eq("$v:Modo_Juego", "HARD"), [mb.stmt_set_var("Velocidad_Base",0.30),mb.stmt_set_var("Delta",0.055)]),
-        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "CHAOS"), [mb.stmt_set_var("Velocidad_Base",0.23),mb.stmt_set_var("Delta",0.04)]),
+        mb.stmt_if(mb.op_or(mb.op_eq("$v:Modo_Juego", "CHAOS"),mb.op_eq("$v:Modo_Juego", "NIGHTMARE")), [mb.stmt_set_var("Velocidad_Base",0.23),mb.stmt_set_var("Delta",0.04)]),
         mb.stmt_set_var("Velocidad_Caida", mb.op_div("$v:Velocidad_Base",mb.op_add(1,mb.op_mul(mb.op_sub("$v:Nivel",1),"$v:Delta")))),
-        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "CHAOS"), [
+        mb.stmt_if(mb.op_or(mb.op_eq("$v:Modo_Juego", "CHAOS"),mb.op_eq("$v:Modo_Juego", "NIGHTMARE")), [
             mb.stmt_set_var("Velocidad_Caida",mb.op_div("$v:Velocidad_Caida",mb.op_add(1,mb.op_div("$v:Tiempo_Juego",180)))),
             mb.stmt_if(mb.op_eq("$v:Evento_Caos","SPEED BURST"),[mb.stmt_set_var("Velocidad_Caida",mb.op_mul("$v:Velocidad_Caida",0.5))])]),
         mb.stmt_if(mb.op_lt("$v:Velocidad_Caida",0.07),[mb.stmt_set_var("Velocidad_Caida",0.07)])])
@@ -1716,6 +1721,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Proximo_Ataque", 25),
             mb.stmt_set_var("Evento_Fin", 0),
             mb.stmt_set_var("Eventos", 0),
+            mb.stmt_set_var("Nightmare_Intro", 0),
+            mb.stmt_set_var("Pausa_Origen", "JUGANDO"),
             mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(proc_vel_code, [], [], True),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
@@ -1748,8 +1755,14 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_if(mb.op_eq("$v:Colision_Detectada",1),[mb.stmt_set_var("Estado_Juego","GAMEOVER")]),
         mb.stmt_set_var("Bloqueo",-1),call(proc_ghost_code),mb.stmt_broadcast("Actualizar_UI")])
     mb.define_proc("Alternar_Pausa",[],[],True,[
-        mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","JUGANDO"),[mb.stmt_set_var("Estado_Juego","PAUSA")],[mb.stmt_if(mb.op_eq("$v:Estado_Juego","PAUSA"),[mb.stmt_set_var("Estado_Juego","JUGANDO")])]),
+        mb.stmt_if_else(mb.op_or(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO")),
+            [mb.stmt_set_var("Pausa_Origen","$v:Estado_Juego"),mb.stmt_set_var("Estado_Juego","PAUSA")],
+            [mb.stmt_if(mb.op_eq("$v:Estado_Juego","PAUSA"),[mb.stmt_set_var("Estado_Juego","$v:Pausa_Origen")])]),
         mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),mb.stmt_broadcast("Actualizar_UI")])
+    mb.define_proc("Comenzar_Modo",[],[],True,[
+        call(proc_start_code),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+            mb.stmt_set_var("Estado_Juego","NIGHTMARE_INTRO"),mb.stmt_set_var("Nightmare_Intro",0),mb.stmt_broadcast("Actualizar_UI")])])
     key_actions = {
         "left": ("left arrow",lambda:[call(proc_move_code,proc_move_args,[-1])],True),
         "right": ("right arrow",lambda:[call(proc_move_code,proc_move_args,[1])],True),
@@ -1758,9 +1771,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "space": ("space",lambda:[call(proc_hard_code)],False),
         "c": ("c",lambda:[call(proc_hold_code)],False),
         "p": ("p",lambda:[call("Alternar_Pausa")],False),
-        "r": ("r",lambda:[call(proc_start_code)],False),
-        "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),[call(proc_start_code)])],False)}
-    for key,mode in [("1","NORMAL"),("2","HARD"),("3","CHAOS")]:
+        "r": ("r",lambda:[call("Comenzar_Modo")],False),
+        "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),[call("Comenzar_Modo")])],False)}
+    for key,mode in [("1","NORMAL"),("2","HARD"),("3","CHAOS"),("4","NIGHTMARE")]:
         key_actions[key]=(key,lambda mode=mode:[mb.stmt_if(mb.op_not(mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_set_var("Modo_Juego",mode),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),call(proc_render_code),mb.stmt_broadcast("Actualizar_UI")])],False)
     inputs=[]
     for key,(scratch_key,actions,repeats) in key_actions.items():
@@ -1772,6 +1785,12 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_set_var("Delta",mb.op_sub("$b:"+mb.expr_timer(),"$v:Ultimo_Tick")),
         mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),
         mb.stmt_if(mb.op_gt("$v:Delta",0.1),[mb.stmt_set_var("Delta",0.1)]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO"),[
+            mb.stmt_change_var("Nightmare_Intro","$v:Delta"),
+            mb.stmt_if(mb.op_gt("$v:Nightmare_Intro",0.8),[
+                mb.stmt_set_var("Estado_Juego","NIGHTMARE_READY"),mb.stmt_broadcast("Actualizar_UI")])]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","NIGHTMARE_READY"),[
+            mb.stmt_set_var("Estado_Juego","JUGANDO"),mb.stmt_set_var("Delta",0)]),
         mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[
             mb.stmt_change_var("Tiempo_Juego","$v:Delta"),
             mb.stmt_if(mb.op_eq("$v:Modo_Juego","CHAOS"),[
@@ -1938,7 +1957,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         118,
         84,
     )
-    for m_asset in (modal_menu, modal_pausa, modal_gameover):
+    modal_nightmare = register_svg_asset("Nightmare_Intro", '''<svg xmlns="http://www.w3.org/2000/svg" width="236" height="168"><rect x="1" y="1" width="234" height="166" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M12 41H224 M12 126H224" stroke="#FFBC32"/><text x="14" y="29" fill="#FFBC32" font-family="monospace" font-size="18" font-weight="bold">NIGHTMARE</text><text x="14" y="75" fill="#F5F2E9" font-family="monospace" font-size="12">ENDLESS / INITIALIZING</text><text x="14" y="148" fill="#F5F2E9" font-family="monospace" font-size="11">SURVIVE THE PRESSURE</text></svg>''',118,84)
+    for m_asset in (modal_menu, modal_pausa, modal_gameover, modal_nightmare):
         all_zip_files[m_asset["md5ext"]] = m_asset["bytes"]
 
     pb = ScratchBlockBuilder("pan", var_map, list_map, bcast_specs)
@@ -1972,6 +1992,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         pb.op_eq("$v:Estado_Juego", "GAMEOVER"),
                         [pb.stmt_switch_costume("GameOver_Modal")],
                     ),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "NIGHTMARE_INTRO"),
+                        [pb.stmt_switch_costume("Nightmare_Intro")]),
                 ],
             ),
         ],
@@ -1992,6 +2014,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             {k: v for k, v in modal_menu.items() if k != "bytes"},
             {k: v for k, v in modal_pausa.items() if k != "bytes"},
             {k: v for k, v in modal_gameover.items() if k != "bytes"},
+            {k: v for k, v in modal_nightmare.items() if k != "bytes"},
         ],
         "sounds": [],
         "volume": 100,

@@ -523,6 +523,25 @@ def run_all_tests(sb3_path: str) -> List[str]:
     assert sum(1 for value in vm.lists["Tablero"] if value) == 1
     report.append("[PASS] QA-ROT-T-01: giros repetidos fijan cuatro minos; doble limpieza legítima con T rotada.")
 
+    # T-spin double: tres esquinas ocupadas y giro final 1 -> 2 dentro del hueco.
+    vm.call_proc("Iniciar_Partida")
+    for row, holes in [(19, {4, 5, 6}), (20, {5})]:
+        for col in range(1, 11):
+            if col not in holes:
+                vm.lists["Tablero"][(row - 1) * 10 + col - 1] = 8
+    vm.lists["Tablero"][173] = 8  # fila 18, columna 4: tercera esquina ocupada
+    vm.vars.update(Pieza_Actual=3, Pieza_Rotacion=1, Pieza_Col=5, Pieza_Fila=19)
+    vm.call_proc("Comprobar_Colision %s %s %s %s", 3, 5, 19, 1)
+    assert vm.vars["Colision_Detectada"] == 0
+    vm.call_proc("Rotar_Pieza")
+    assert vm.vars["Rotacion_Exito"] == 1 and vm.vars["Pieza_Rotacion"] == 2
+    assert vm.vars["Pieza_Col"] == 5 and vm.vars["Pieza_Fila"] == 19
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Lineas_Turno"] == 2 and vm.vars["Lineas"] == 2
+    assert vm.vars["Puntuacion"] == 300
+    assert sum(1 for value in vm.lists["Tablero"] if value) == 1
+    report.append("[PASS] QA-ROT-T-01: T-spin double con tres esquinas ocupadas y dos filas completas.")
+
     vm.call_proc("Iniciar_Partida")
     vm.vars["Pieza_Actual"] = 2
     vm.vars["Pieza_Col"] = 5
@@ -603,6 +622,28 @@ def run_all_tests(sb3_path: str) -> List[str]:
         vm.call_proc("Actualizar_Velocidad_Y_Caos")
         assert 0.07 <= vm.vars["Velocidad_Caida"] < base
     report.append("[PASS] Tres modos: 0.65 / 0.30 / 0.23 s, aceleración y piso de 0.07 s.")
+    vm.vars["Modo_Juego"] = "NIGHTMARE"
+    vm.call_proc("Comenzar_Modo")
+    assert vm.vars["Estado_Juego"] == "NIGHTMARE_INTRO"
+    assert abs(vm.vars["Velocidad_Caida"] - .23) < 1e-9
+    vm.sim_timer += .1
+    vm.call_proc("Tick")
+    intro_before = vm.vars["Nightmare_Intro"]
+    vm.call_proc("Alternar_Pausa")
+    for _ in range(10):
+        vm.sim_timer += .1
+        vm.call_proc("Tick")
+    assert vm.vars["Nightmare_Intro"] == intro_before and vm.vars["Tiempo_Juego"] == 0
+    vm.call_proc("Alternar_Pausa")
+    assert vm.vars["Estado_Juego"] == "NIGHTMARE_INTRO"
+    for _ in range(10):
+        vm.sim_timer += .1
+        vm.call_proc("Tick")
+    assert vm.vars["Estado_Juego"] == "JUGANDO"
+    vm.vars.update(Nivel=999, Tiempo_Juego=99999)
+    vm.call_proc("Actualizar_Velocidad_Y_Caos")
+    assert vm.vars["Velocidad_Caida"] >= .07
+    report.append("[PASS] Nightmare: intro y pausa, reanudación y límite de gravedad.")
     vm.vars["Modo_Juego"]="NORMAL"
     vm.call_proc("Iniciar_Partida")
     # Ejecutar el mismo Tick que invoca el hilo principal, con tiempo simulado.
