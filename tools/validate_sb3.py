@@ -712,6 +712,43 @@ def run_all_tests(sb3_path: str) -> List[str]:
     assert vm.vars["NM_Warning"] == 1 and vm.vars["NM_Rows"] == 2 and not any(vm.lists["Tablero"])
     vm.call_proc("Nightmare_OnLock")
     assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 18
+    # Cadena doble -> jam: cada etapa conserva su aviso completo.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Tiempo_Juego=121, NM_Cooldown=5, NM_Sequence=3, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Chain"],vm.vars["NM_Event"],vm.vars["NM_Warning"]) == (1,"DOUBLE",4)
+    for _ in range(4): vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Warning"],vm.vars["NM_Jam"]) == ("CHAIN_JAM",2,0)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Warning"] == 1 and vm.vars["NM_Jam"] == 0
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Jam"],vm.vars["NM_Chain"]) == ("NONE",7,0)
+    # Cadena jam -> deuda: dos piezas de aviso y no se consume la deuda al activarla.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Tiempo_Juego=121, NM_Cooldown=5, NM_Sequence=7, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Chain"],vm.vars["NM_Event"],vm.vars["NM_Warning"]) == (2,"JAM_WARNING",2)
+    vm.call_proc("Nightmare_OnLock"); vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Warning"],vm.vars["NM_Jam"]) == ("CHAIN_DEBT",2,7)
+    vm.call_proc("Nightmare_OnLock"); vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Warning"],vm.vars["NM_Jam"]) == ("DEBT",12,5)
+    vm.call_proc("Iniciar_Partida")
+    assert vm.vars["NM_Chain"] == 0 and vm.vars["NM_Jam"] == 0
+    vm.vars.update(Tiempo_Juego=121, NM_Cooldown=5, NM_Sequence=3, Lineas_Turno=0)
+    for i in range(8): vm.lists["Tablero"][i] = 8
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Delayed"],vm.vars["NM_Event"],vm.vars["NM_Sequence"]) == (1,"NONE",3)
+    for i in range(8): vm.lists["Tablero"][i] = 0
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Delayed"],vm.vars["NM_Event"],vm.vars["NM_Warning"]) == (0,"DOUBLE",4)
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=1, NM_Rows=2, NM_Chain=1, NM_Cancelable=1, Lineas_Turno=0)
+    vm.lists["Tablero"][0] = 8
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["Estado_Juego"] == "GAMEOVER" and vm.vars["NM_Event"] == "NONE"
+    assert sum(v == 8 for v in vm.lists["Tablero"][-20:]) == 9
+    vm.call_proc("Iniciar_Partida")
+    assert vm.vars["NM_Chain"] == 0 and not any(vm.lists["Tablero"])
+    report.append("[PASS] Chaos Chain: ambas secuencias, aviso completo, convivencia y reinicio.")
     report.append("[PASS] Nightmare: aviso y cancelación de basura doble; Hold Jam de siete fijaciones.")
     report.append("[PASS] Nightmare: deuda, progreso parcial, vencimiento y aviso final de dos piezas.")
     vm.vars["Modo_Juego"]="NORMAL"

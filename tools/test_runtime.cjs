@@ -51,6 +51,11 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   set('NM_Event','DOUBLE');set('NM_Warning',1);set('NM_Rows',2);set('NM_Progress',0);
   await key(' ');assert.equal(get('NM_Event'),'NONE');
   assert.equal(get('Tablero').slice(-20).filter(v=>Number(v)===8).length,18);
+  set('Tiempo_Juego',121);set('NM_Sequence',3);set('NM_Cooldown',5);
+  await key(' ');assert.equal(Number(get('NM_Chain')),1);assert.equal(get('NM_Event'),'DOUBLE');assert.equal(Number(get('NM_Warning')),4);
+  await key('p');const chainWarning=get('NM_Warning');await delay(250);assert.equal(get('NM_Warning'),chainWarning);
+  await key('p');set('NM_Warning',1);await key(' ');
+  assert.equal(get('NM_Event'),'CHAIN_JAM');assert.equal(Number(get('NM_Warning')),2);
   console.log(JSON.stringify({pass:true,results,interaction:'pause/resume, arrows, rotate, hold, hard/soft drop, restart, modes, chaos events, garbage'},null,2));
  }finally{vm.quit()}
 })().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1)});

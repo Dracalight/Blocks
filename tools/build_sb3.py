@@ -796,7 +796,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0,
                         "Nightmare_Intro":0, "Pausa_Origen":"JUGANDO",
                         "NM_Event":"NONE", "NM_Warning":0, "NM_Rows":0,
-                        "NM_Progress":0, "NM_Jam":0, "NM_Cooldown":0, "NM_Sequence":0, "NM_Cancelable":1}.items():
+                        "NM_Progress":0, "NM_Jam":0, "NM_Cooldown":0, "NM_Sequence":0, "NM_Cancelable":1,
+                        "NM_Chain":0, "NM_EventStart":"NONE", "NM_Top":0, "NM_Scan":1, "NM_Delayed":0}.items():
         var_specs[name] = ("v2_"+name, value)
     for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "4", "enter"]:
         var_specs["key_"+key] = ("v2_key_"+key, 0)
@@ -912,8 +913,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         motor_costumes.append({k: v for k, v in casset.items() if k != "bytes"})
 
     # HUD vectorial: cifras y estados estampados, sin monitores de variables.
-    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES"]:
-        asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{label}</text></svg>',65,12)
+    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED"]:
+        safe_label = label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{safe_label}</text></svg>',65,12)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
         motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
 
@@ -1264,6 +1266,12 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_if(mb.op_eq("$v:NM_Event","JAM_WARNING"),[
                     mb.stmt_switch_costume("HUD_HOLD JAM SOON"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","CHAIN_JAM"),[
+                    mb.stmt_switch_costume("HUD_HOLD JAM SOON"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","CHAIN_DEBT"),[
+                    mb.stmt_switch_costume("HUD_DEBT SOON"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
                 mb.stmt_if(mb.op_eq("$v:NM_Event","DEBT"),[
                     mb.stmt_switch_costume("HUD_GARBAGE DEBT"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
                     mb.stmt_switch_costume("HUD_ROWS"),mb.stmt_goto_xy(-194,-87),mb.stmt_pen_stamp(),
@@ -1273,8 +1281,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_switch_costume("HUD_LINES"),mb.stmt_goto_xy(-180,-108),mb.stmt_pen_stamp(),
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Progress",-140,-108],True)]),
                 mb.stmt_if(mb.op_gt("$v:NM_Jam",0),[
-                    mb.stmt_switch_costume("HUD_HOLD JAM"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
-                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Jam",-160,-87],True)])]),
+                    mb.stmt_switch_costume("HUD_HOLD JAM"),mb.stmt_goto_xy(-178,40),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Jam",-127,40],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Chain",1),[mb.stmt_switch_costume("HUD_CHAIN: DOUBLE > JAM"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_eq("$v:NM_Chain",2),[mb.stmt_switch_costume("HUD_CHAIN: JAM > DEBT"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_eq("$v:NM_Delayed",1),[mb.stmt_switch_costume("HUD_PRESSURE DELAYED"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()])]),
             mb.stmt_hide(),
         ],
         x=560,
@@ -1753,7 +1764,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Pausa_Origen", "JUGANDO"),
             mb.stmt_set_var("NM_Event", "NONE"),mb.stmt_set_var("NM_Warning", 0),
             mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Progress",0),
-            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),
+            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),
             mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(proc_vel_code, [], [], True),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
@@ -1787,11 +1798,16 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_set_var("Bloqueo",-1),call(proc_ghost_code),mb.stmt_broadcast("Actualizar_UI")])
     # Un solo evento comprometido. Las cuentas avanzan únicamente al fijar pieza.
     mb.define_proc("Nightmare_OnLock",[],[],True,[
+        mb.stmt_set_var("NM_EventStart","$v:NM_Event"),
         mb.stmt_if(mb.op_gt("$v:NM_Jam",0),[mb.stmt_change_var("NM_Jam",-1)]),
         mb.stmt_if_else(mb.op_eq("$v:NM_Event","NONE"),[
             mb.stmt_if(mb.op_eq("$v:NM_Jam",0),[
                 mb.stmt_change_var("NM_Cooldown",1),
-                mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Cooldown",5),mb.op_gt("$v:Tiempo_Juego",20)),[
+                mb.stmt_set_var("NM_Top",0),mb.stmt_set_var("NM_Scan",1),
+                mb.stmt_repeat(40,[mb.stmt_if(mb.op_gt(mb.expr_list_item("Tablero","$v:NM_Scan"),0),[mb.stmt_change_var("NM_Top",1)]),mb.stmt_change_var("NM_Scan",1)]),
+                mb.stmt_if(mb.op_and(mb.op_and(mb.op_gt("$v:NM_Cooldown",5),mb.op_gt("$v:Tiempo_Juego",20)),mb.op_gt("$v:NM_Top",7)),[mb.stmt_set_var("NM_Delayed",1)]),
+                mb.stmt_if(mb.op_and(mb.op_and(mb.op_gt("$v:NM_Cooldown",5),mb.op_gt("$v:Tiempo_Juego",20)),mb.op_lt("$v:NM_Top",8)),[
+                    mb.stmt_set_var("NM_Delayed",0),
                     mb.stmt_set_var("NM_Cooldown",0),
                     mb.stmt_if_else(mb.op_eq(mb.op_mod("$v:NM_Sequence",3),0),[
                         mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",4),
@@ -1800,8 +1816,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                             mb.stmt_set_var("NM_Event","DEBT"),mb.stmt_set_var("NM_Warning",12),
                             mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0)],
                             [mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)])]),
+                    mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",120),mb.op_eq(mb.op_mod("$v:NM_Sequence",4),3)),[
+                        mb.stmt_if_else(mb.op_eq(mb.op_mod("$v:NM_Sequence",8),3),[
+                            mb.stmt_set_var("NM_Chain",1),mb.stmt_set_var("NM_Event","DOUBLE"),
+                            mb.stmt_set_var("NM_Warning",4),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)],
+                            [mb.stmt_set_var("NM_Chain",2),mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)])]),
                     mb.stmt_change_var("NM_Sequence",1),mb.stmt_play_sound("Sonido_Caos")])])],
-            [mb.stmt_if(mb.op_eq("$v:NM_Event","DOUBLE"),[
+            [mb.stmt_if(mb.op_eq("$v:NM_EventStart","DOUBLE"),[
                 mb.stmt_if(mb.op_eq("$v:NM_Cancelable",1),[
                     mb.stmt_change_var("NM_Progress","$v:Lineas_Turno"),
                     mb.stmt_repeat(2,[mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Progress",1),mb.op_gt("$v:NM_Rows",0)),[
@@ -1809,12 +1830,25 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_change_var("NM_Warning",-1),
                 mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
                     mb.stmt_repeat("$v:NM_Rows",[mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[call("Garbage_Attack")])]),
-                    mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Event","NONE")])]),
-             mb.stmt_if(mb.op_eq("$v:NM_Event","JAM_WARNING"),[
+                    mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Event","NONE"),
+                    mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Chain",1),mb.op_eq("$v:Estado_Juego","JUGANDO")),[
+                        mb.stmt_set_var("NM_Event","CHAIN_JAM"),mb.stmt_set_var("NM_Warning",2)])])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","JAM_WARNING"),[
                 mb.stmt_change_var("NM_Warning",-1),
                 mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
-                    mb.stmt_set_var("NM_Jam",7),mb.stmt_set_var("NM_Event","NONE")])]),
-             mb.stmt_if(mb.op_eq("$v:NM_Event","DEBT"),[
+                    mb.stmt_set_var("NM_Jam",7),mb.stmt_set_var("NM_Event","NONE"),
+                    mb.stmt_if(mb.op_eq("$v:NM_Chain",2),[
+                        mb.stmt_set_var("NM_Event","CHAIN_DEBT"),mb.stmt_set_var("NM_Warning",2)])])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","CHAIN_JAM"),[
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    mb.stmt_set_var("NM_Jam",7),mb.stmt_set_var("NM_Event","NONE"),mb.stmt_set_var("NM_Chain",0)])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","CHAIN_DEBT"),[
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    mb.stmt_set_var("NM_Event","DEBT"),mb.stmt_set_var("NM_Warning",12),mb.stmt_set_var("NM_Rows",2),
+                    mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Chain",0)])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","DEBT"),[
                 mb.stmt_change_var("NM_Progress","$v:Lineas_Turno"),
                 mb.stmt_repeat(2,[mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Progress",1),mb.op_gt("$v:NM_Rows",0)),[
                     mb.stmt_change_var("NM_Progress",-2),mb.stmt_change_var("NM_Rows",-1)])]),
@@ -2035,6 +2069,14 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             pb.stmt_goto_xy(0, 6),
             pb.stmt_switch_costume("Menu_Principal"),
             pb.stmt_show(),
+            # Capa visual únicamente: interpola con el reloj lógico de intro.
+            pb.stmt_forever([
+                pb.stmt_if_else(pb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO"),[
+                    pb.stmt_goto_xy(pb.op_add(-20,pb.op_mul("$v:Nightmare_Intro",25)),6),
+                    pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Nightmare_Intro",12.5)))],
+                    [pb.stmt_if(pb.op_not(pb.op_eq("$v:Estado_Juego","PAUSA")),[
+                        pb.stmt_set_size(100)])]),
+                pb.stmt_wait(0.05)])
         ],
         x=40,
         y=40,
