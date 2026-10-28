@@ -852,8 +852,15 @@ def run_all_tests(sb3_path: str) -> List[str]:
     for _ in range(32):
         vm.sim_timer += .1; vm.call_proc("Tick")
     assert (vm.vars["Estado_Juego"],vm.vars["Trial_Wave"],vm.vars["Trial_Goal"]) == ("JUGANDO",2,25)
+    assert vm.vars["Trial_LineGoal"] == 2 and vm.vars["Trial_Lines"] == 0
+    vm.vars.update(Trial_Count=24,Trial_Event=2,Trial_Required=2,NM_Event="NONE",NM_Jam=0,Lineas_Turno=0)
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "JUGANDO"  # fijaciones solas no bastan
+    vm.vars["Lineas_Turno"] = 2
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_INTERMISSION"
     vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=5,Trial_Count=39,Trial_Goal=40,
-                   Trial_Event=3,Trial_Required=3,NM_Event="NONE",NM_Jam=0,Trial_GlitchDone=1)
+                   Trial_Event=3,Trial_Required=3,NM_Event="NONE",NM_Jam=0,Trial_GlitchDone=1,Trial_LineGoal=4,Trial_Lines=4,Lineas_Turno=0)
     vm.call_proc("Trial_OnLock")
     assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
     vm.call_proc("Comenzar_Modo")
@@ -872,7 +879,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
             seen_waves.add(vm.vars["Trial_Wave"])
         else:
             vm.lists["Tablero"] = [0] * 200  # fixture, no partida real
-            vm.vars["Lineas_Turno"] = 0
+            vm.vars["Lineas_Turno"] = 1  # fixture: una limpieza por fijación
             if vm.vars["Trial_Wave"] == 5 and vm.vars["Trial_Count"] >= 36:
                 vm.vars["Trial_GlitchDone"] = 1  # el microjuego se prueba por separado
             vm.call_proc("Nightmare_OnLock")
@@ -933,6 +940,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.call_proc("Fijar_Y_Procesar_Pieza")
     assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
     # Fallar anuncia la penalización una sola vez; reiniciar elimina el estado.
+    vm.vars["Trial_GlitchDone"] = 0
     vm.call_proc("Glitch_Begin")
     vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=.7,G_PrevPhase=0,G_X=0,G_Y=0,G_HP=1,G_Invuln=0,Delta=0)
     vm.call_proc("Glitch_Advance"); assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 0
@@ -940,6 +948,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
         vm.sim_timer += .1; vm.call_proc("Tick")
         if vm.vars["Estado_Juego"] == "JUGANDO": break
     assert (vm.vars["NM_Event"],vm.vars["NM_Rows"],vm.vars["NM_Warning"]) == ("DOUBLE",2,2)
+    assert vm.vars["Trial_GlitchDone"] == 0  # fallar no cumple el objetivo del Core
     vm.call_proc("Iniciar_Partida"); assert vm.vars["NM_Event"] == "NONE" and vm.vars["Trial_GlitchDone"] == 0
     report.append("[PASS] Glitch: cinco colisiones, invulnerabilidad, pausa, retorno y resolución única.")
     vm.vars["NM_Submode"]="ENDLESS"
