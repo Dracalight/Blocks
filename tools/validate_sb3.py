@@ -652,17 +652,23 @@ def run_all_tests(sb3_path: str) -> List[str]:
         ({"NM_OldJam":0, "NM_Jam":7}, "JAM LOCK"),
         ({"NM_OldJam":1, "NM_Jam":0}, "JAM FREE"),
         ({"NM_EventStart":"DOUBLE", "NM_Event":"CHAIN_JAM", "NM_Chain":1}, "CHAIN"),
-        ({"Armor_Hit":1}, "ARMOR HIT")]:
+        ({"Armor_Hit":1}, "ARMOR HIT"),
+        ({"Armor_Broken":1}, "ARMOR BREAK"),
+        ({"NM_Submode":"TRIALS", "Lineas_Turno":1}, "OBJECTIVE")]:
         vm.vars.update(NM_EventStart="NONE",NM_Event="NONE",NM_OldRows=0,NM_Rows=0,
-                       NM_OldJam=0,NM_Jam=0,NM_OldDelayed=0,NM_Delayed=0,NM_Chain=0,Armor_Hit=0,NM_FX="NONE",NM_FXTime=0)
+                       NM_OldJam=0,NM_Jam=0,NM_OldDelayed=0,NM_Delayed=0,NM_Chain=0,Armor_Hit=0,Armor_Broken=0,Lineas_Turno=0,NM_Submode="ENDLESS",NM_FX="NONE",NM_FXTime=0)
         vm.vars.update(values); vm.call_proc("Nightmare_VisualCue")
         assert vm.vars["NM_FX"] == expected and vm.vars["NM_FXTime"] == .8
-    vm.vars.update(Estado_Juego="JUGANDO",NM_Event="NONE",NM_FXTime=.8,Tiempo_Juego=0)
+    vm.vars.update(Estado_Juego="JUGANDO",NM_Submode="ENDLESS",NM_Event="NONE",NM_FXTime=.8,Tiempo_Juego=0)
     vm.call_proc("Alternar_Pausa"); vm.sim_timer += .1; vm.call_proc("Tick")
     assert vm.vars["NM_FXTime"] == .8
     vm.call_proc("Alternar_Pausa"); vm.sim_timer += .1; vm.call_proc("Tick")
     assert 0 < vm.vars["NM_FXTime"] < .8
     vm.call_proc("Iniciar_Partida"); assert vm.vars["NM_FXTime"] == 0
+    vm.vars.update(Estado_Juego="GAMEOVER",Resultado_Timer=0)
+    vm.sim_timer += .1; vm.call_proc("Tick")
+    assert 0 < vm.vars["Resultado_Timer"] <= .1
+    vm.call_proc("Iniciar_Partida"); assert vm.vars["Resultado_Timer"] == 0
     report.append("[PASS] Nightmare: señales visuales, pausa, reanudación y reinicio.")
     # Pruebas del procesador por pieza: avisos, cancelación y duración.
     vm.call_proc("Iniciar_Partida")
@@ -778,7 +784,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     assert vm.lists["Tablero"][-10:] == [10] * 10
     assert vm.vars["Armor_Hit"] == 1 and vm.vars["Lineas_Turno"] == 0 and vm.vars["Puntuacion"] == 0
     vm.call_proc("Revisar_Y_Eliminar_Lineas")
-    assert vm.vars["Armor_Hit"] == 0 and vm.vars["Lineas_Turno"] == 1
+    assert vm.vars["Armor_Hit"] == 0 and vm.vars["Armor_Broken"] == 1 and vm.vars["Lineas_Turno"] == 1
     assert not any(vm.lists["Tablero"]) and vm.vars["Puntuacion"] == 100
     # Compactación simultánea: dos filas se agrietan, una ordinaria se elimina.
     vm.call_proc("Iniciar_Partida")
@@ -787,7 +793,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     assert vm.vars["Armor_Hit"] == 2 and vm.vars["Lineas_Turno"] == 1
     assert vm.lists["Tablero"][-20:] == [10] * 20
     vm.call_proc("Revisar_Y_Eliminar_Lineas")
-    assert vm.vars["Lineas_Turno"] == 2 and not any(vm.lists["Tablero"])
+    assert vm.vars["Lineas_Turno"] == 2 and vm.vars["Armor_Broken"] == 2 and not any(vm.lists["Tablero"])
     # T-spin double: una fila normal se limpia y la blindada se resuelve
     # automáticamente en la siguiente fijación sin alcanzar ningún hueco.
     vm.call_proc("Iniciar_Partida")
@@ -936,7 +942,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
         vm.call_proc("Glitch_Advance"); assert vm.vars["G_HP"] == 2, phase
     # Ruta de referencia con pasos de 6 px cada 50 ms; no demuestra balance
     # en hardware real ni prueba todas las posiciones de inicio posibles.
-    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=0,G_PrevPhase=-1,G_X=0,G_Y=-45,G_HP=3,G_Invuln=0)
+    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=0,G_PrevPhase=-1,G_X=0,G_Y=-35,G_HP=3,G_Invuln=0)
     for _ in range(105):
         if vm.vars["Estado_Juego"] != "GLITCH_PLAY": break
         phase=int(vm.vars["G_Time"]); inner=vm.vars["G_Time"]-phase
@@ -969,6 +975,13 @@ def run_all_tests(sb3_path: str) -> List[str]:
         if vm.vars["Estado_Juego"] == "JUGANDO": break
     assert (vm.vars["NM_Event"],vm.vars["NM_Rows"],vm.vars["NM_Warning"]) == ("DOUBLE",2,2)
     assert vm.vars["Trial_GlitchDone"] == 0  # fallar no cumple el objetivo del Core
+    # Quedarse inmóvil desde el spawn no debe ganar el minijuego por defecto.
+    vm.call_proc("Glitch_Begin")
+    vm.vars["Estado_Juego"] = "GLITCH_PLAY"
+    for _ in range(100):
+        if vm.vars["Estado_Juego"] != "GLITCH_PLAY": break
+        vm.vars["Delta"] = .05; vm.call_proc("Glitch_Advance")
+    assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 0
     vm.call_proc("Iniciar_Partida"); assert vm.vars["NM_Event"] == "NONE" and vm.vars["Trial_GlitchDone"] == 0
     report.append("[PASS] Glitch: cinco colisiones, invulnerabilidad, pausa, retorno y resolución única.")
     vm.vars["NM_Submode"]="ENDLESS"

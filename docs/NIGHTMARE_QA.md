@@ -9,7 +9,7 @@ Estado: checkpoint de desarrollo, **no release candidate**. La dirección de Ind
 - Confirmaciones de eventos: sellos vectoriales durante 0,8 s en el margen izquierdo para advertencia, impacto de garbage, bloqueo/desbloqueo de Hold, reducción de deuda, cadena, daño de blindaje y presión diferida. Se desplazan y cambian de escala; M los suprime. No se dibujan sobre el tablero ni la firma. Las alertas persistentes permanecen con M.
 - La línea completada usa el efecto existente. El blindaje muestra disfraces intacto y agrietado.
 
-Pendientes del catálogo: efectos diferenciados de aparición y destrucción de blindaje; inicio y final animados para todos los objetivos; entrada/salida de arena, retorno, victorias y Game Over con coreografía propia; transición de selección; verificación real del movimiento, la sincronización, los textos y la legibilidad. Los sellos de confirmación no cubren todos los efectos pedidos.
+Pendientes del catálogo: inicio y final animados para todos los objetivos; materialización y desmaterialización de arena; retorno; transición de selección y regreso al menú; verificación real del movimiento, la sincronización, los textos y la legibilidad. Los sellos de confirmación no cubren todos los efectos pedidos. La matriz R7 recoge los detalles de las nuevas señales de blindaje y pantallas finales.
 
 ## Balance y simulación
 
@@ -35,3 +35,7 @@ No se han cambiado los parámetros de dificultad en esta pasada: modificar balan
 6. En Glitch probar flechas, avisos de ataques, pausa, reinicio y retorno; comprobar que el tablero no avanza durante el desafío.
 7. Pulsar M y confirmar que bajan las animaciones secundarias y permanecen visibles las amenazas. Escuchar efectos y comprobar que no se quedan sonando.
 8. Registrar cualquier fallo con modo, estado, pasos y, si es posible, foto o grabación.
+
+## Avance R7
+
+Se incorporaron señales de entrada y destrucción de blindaje conectadas a los estados reales y entradas diferenciadas para derrota de Core, Game Over de Nightmare y victoria de Trials. La [matriz de animaciones](NIGHTMARE_ANIMATION_MATRIX.md) identifica efectos que aún faltan; por tanto no es una implementación completa. La [simulación con tablero persistente y comparación de Glitch](NIGHTMARE_BALANCE_R7.md) describe los límites de los bots y resultados. Siguen pendientes QA gráfico y de audio, iPad y balance humano.

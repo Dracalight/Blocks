@@ -815,11 +815,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         "NM_Event":"NONE", "NM_Warning":0, "NM_Rows":0,
                         "NM_Progress":0, "NM_Jam":0, "NM_Cooldown":0, "NM_Sequence":0, "NM_Cancelable":1,
                         "NM_Chain":0, "NM_EventStart":"NONE", "NM_Top":0, "NM_Scan":1, "NM_Delayed":0,
-                        "Armor_Row":0, "Armor_Hit":0, "NM_FX":"NONE", "NM_FXTime":0, "NM_OldRows":0, "NM_OldJam":0, "NM_OldDelayed":0, "NM_Submode":"ENDLESS", "Trial_Wave":1,
+                        "Armor_Row":0, "Armor_Hit":0, "Armor_Broken":0, "Armor_CrackedRow":0, "NM_FX":"NONE", "NM_FXTime":0, "NM_OldRows":0, "NM_OldJam":0, "NM_OldDelayed":0, "NM_Submode":"ENDLESS", "Trial_Wave":1,
                         "Trial_Count":0, "Trial_Event":0, "Trial_Goal":20, "Trial_Timer":0, "Trial_Required":1, "Trial_Lines":0, "Trial_LineGoal":0,
                         "Trial_GlitchDone":0, "G_Timer":0, "G_Time":0, "G_Phase":0, "G_PrevPhase":-1,
                         "G_Inner":0, "G_X":0, "G_Y":-45, "G_TargetX":0, "G_TargetY":0,
-                        "G_HP":3, "G_Invuln":0, "G_Hit":0, "G_Pos":0, "G_Next":60, "G_Success":0, "G_Active":0, "G_Radius":0, "G_SoundedPhase":-1, "NM_Reduced":0}.items():
+                        "G_HP":3, "G_Invuln":0, "G_Hit":0, "G_Pos":0, "G_Next":60, "G_Success":0, "G_Active":0, "G_Radius":0, "G_SoundedPhase":-1, "NM_Reduced":0, "Resultado_Timer":0}.items():
         var_specs[name] = ("v2_"+name, value)
     for key in ["left", "right", "down", "up", "space", "c", "p", "r", "m", "1", "2", "3", "4", "enter"]:
         var_specs["key_"+key] = ("v2_key_"+key, 0)
@@ -945,7 +945,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
 
     # Short, bounded event confirmations stay in the lower left rail, never
     # over the playfield or creator signature. Timings use the game clock.
-    for label in ("WARNING", "IMPACT", "JAM LOCK", "JAM FREE", "DEBT PAID", "ARMOR HIT", "CHAIN", "PRESSURE"):
+    for label in ("WARNING", "IMPACT", "JAM LOCK", "JAM FREE", "DEBT PAID", "ARMOR IN", "ARMOR HIT", "ARMOR BREAK", "OBJECTIVE", "CHAIN", "PRESSURE"):
         svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="16"><path d="M2 1H118V15H2Z" fill="#101010" stroke="#FFBC32"/><path d="M6 4V12 M114 4V12" stroke="#FFBC32"/><text x="60" y="11.5" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#F5F2E9">{label}</text></svg>'
         asset = register_svg_asset("FX_"+label,svg,60,8)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
@@ -1421,12 +1421,14 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         [
             mb.stmt_set_var("Lineas_Turno", 0),
             mb.stmt_set_var("Armor_Hit", 0),
+            mb.stmt_set_var("Armor_Broken", 0),
             mb.stmt_set_var("f", 20),
             mb.stmt_repeat_until(
                 mb.op_lt("$v:f", 1),
                 [
                     mb.stmt_set_var("fila_completa", 1),
                     mb.stmt_set_var("Armor_Row", 0),
+                    mb.stmt_set_var("Armor_CrackedRow", 0),
                     mb.stmt_set_var("c", 1),
                     mb.stmt_repeat(
                         10,
@@ -1440,6 +1442,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                                 [mb.stmt_set_var("fila_completa", 0)],
                             ),
                             mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq(mb.expr_list_item("Tablero","$v:idx"),9)),[mb.stmt_set_var("Armor_Row",1)]),
+                            mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq(mb.expr_list_item("Tablero","$v:idx"),10)),[mb.stmt_set_var("Armor_CrackedRow",1)]),
                             mb.stmt_change_var("c", 1),
                         ],
                     ),
@@ -1455,6 +1458,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_if_else(
                         mb.op_eq("$v:fila_completa", 1),
                         [
+                            mb.stmt_if(mb.op_eq("$v:Armor_CrackedRow",1),[mb.stmt_change_var("Armor_Broken",1)]),
                             mb.stmt_change_var("Lineas_Turno", 1),
                             mb.stmt_set_var("f_origen", "$v:f"),
                             mb.stmt_repeat_until(
@@ -1862,7 +1866,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Pausa_Origen", "JUGANDO"),
             mb.stmt_set_var("NM_Event", "NONE"),mb.stmt_set_var("NM_Warning", 0),
             mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Progress",0),
-            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("NM_FX","NONE"),mb.stmt_set_var("NM_FXTime",0),mb.stmt_set_var("Armor_Hit",0),
+            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("NM_FX","NONE"),mb.stmt_set_var("NM_FXTime",0),mb.stmt_set_var("Armor_Hit",0),mb.stmt_set_var("Armor_Broken",0),mb.stmt_set_var("Resultado_Timer",0),
             mb.stmt_set_var("Trial_Wave",1),mb.stmt_set_var("Trial_Count",0),mb.stmt_set_var("Trial_Event",0),mb.stmt_set_var("Trial_Goal",20),mb.stmt_set_var("Trial_Timer",0),mb.stmt_set_var("Trial_Required",1),mb.stmt_set_var("Trial_Lines",0),mb.stmt_set_var("Trial_LineGoal",0),mb.stmt_set_var("Trial_GlitchDone",0),mb.stmt_set_var("G_Next",60),
             mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_Inner",0),
             mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-45),mb.stmt_set_var("G_TargetX",0),mb.stmt_set_var("G_TargetY",0),mb.stmt_set_var("G_HP",3),
@@ -1900,6 +1904,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_set_var("Bloqueo",-1),call(proc_ghost_code),mb.stmt_broadcast("Actualizar_UI")])
     mb.define_proc("Nightmare_ArmorAttack",[],[],True,[
         call("Garbage_Attack"),
+        mb.stmt_set_var("NM_FX","ARMOR IN"),mb.stmt_set_var("NM_FXTime",0.8),
         mb.stmt_set_var("NM_Scan",191),
         mb.stmt_repeat(10,[
             mb.stmt_if(mb.op_eq(mb.expr_list_item("Tablero","$v:NM_Scan"),8),[
@@ -1929,7 +1934,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_hide()])
     mb.define_proc("Glitch_Begin",[],[],True,[
         mb.stmt_set_var("Estado_Juego","GLITCH_INTRO"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),
-        mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-45),
+        mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-35),
         mb.stmt_set_var("G_HP",3),mb.stmt_set_var("G_Invuln",0),mb.stmt_set_var("G_Active",0),mb.stmt_set_var("G_SoundedPhase",-1),mb.stmt_set_var("G_Next",mb.op_add("$v:Tiempo_Juego",45)),
         mb.stmt_play_sound("Sonido_NMWarning"),mb.stmt_broadcast("Actualizar_UI")])
     mb.define_proc("Glitch_Advance",[],[],True,[
@@ -1969,7 +1974,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_OldJam",0),mb.op_gt("$v:NM_Jam",0)),nm_cue("JAM LOCK")),
         mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_OldJam",0),mb.op_eq("$v:NM_Jam",0)),nm_cue("JAM FREE")),
         mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Chain",0),mb.op_not(mb.op_eq("$v:NM_EventStart","$v:NM_Event"))),nm_cue("CHAIN")),
-        mb.stmt_if(mb.op_gt("$v:Armor_Hit",0),nm_cue("ARMOR HIT"))])
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_gt("$v:Lineas_Turno",0)),nm_cue("OBJECTIVE")),
+        mb.stmt_if(mb.op_gt("$v:Armor_Hit",0),nm_cue("ARMOR HIT")),
+        mb.stmt_if(mb.op_gt("$v:Armor_Broken",0),nm_cue("ARMOR BREAK"))])
     # Un solo evento comprometido. Las cuentas avanzan únicamente al fijar pieza.
     mb.define_proc("Nightmare_OnLock",[],[],True,[
         mb.stmt_set_var("NM_EventStart","$v:NM_Event"),
@@ -2118,6 +2125,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         mb.stmt_set_var("Delta",mb.op_sub("$b:"+mb.expr_timer(),"$v:Ultimo_Tick")),
         mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),
         mb.stmt_if(mb.op_gt("$v:Delta",0.1),[mb.stmt_set_var("Delta",0.1)]),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_or(mb.op_eq("$v:Estado_Juego","GAMEOVER"),mb.op_eq("$v:Estado_Juego","TRIAL_CLEAR"))),[
+            mb.stmt_if(mb.op_lt("$v:Resultado_Timer",0.8),[mb.stmt_change_var("Resultado_Timer","$v:Delta")])]),
         mb.stmt_if(mb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO"),[
             mb.stmt_change_var("Nightmare_Intro","$v:Delta"),
             mb.stmt_if(mb.op_gt("$v:Nightmare_Intro",0.8),[
@@ -2314,6 +2323,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         118,
         84,
     )
+    modal_nm_gameover = register_svg_asset("Nightmare_GameOver", make_nightmare_modal("SYSTEM FAILURE",["STACK LIMIT REACHED","NIGHTMARE ENDED","ENTER TO RESTART"]),118,84)
+    modal_core_loss = register_svg_asset("Core_Defeat", make_nightmare_modal("CORE OVERRUN",["FINAL WAVE FAILED","STACK LIMIT REACHED","ENTER TO RETRY"]),118,84)
     modal_nightmare = register_svg_asset("Nightmare_Intro", '''<svg xmlns="http://www.w3.org/2000/svg" width="236" height="168"><rect x="1" y="1" width="234" height="166" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M12 41H224 M12 126H224" stroke="#FFBC32"/><text x="14" y="29" fill="#FFBC32" font-family="monospace" font-size="18" font-weight="bold">NIGHTMARE</text><text x="14" y="75" fill="#F5F2E9" font-family="monospace" font-size="12">INITIALIZING</text><text x="14" y="148" fill="#F5F2E9" font-family="monospace" font-size="11">SURVIVE THE PRESSURE</text></svg>''',118,84)
     modal_trial = register_svg_asset("Trial_Intermission", make_nightmare_modal("WAVE CLEAR",["BOARD PRESERVED","NEXT WAVE INCOMING","PREPARE TO SURVIVE"]),118,84)
     modal_wave2 = register_svg_asset("Trial_Wave2", make_nightmare_modal("WAVE 2: LOCKDOWN",["25 LOCKS / 2 LINES","SURVIVE HOLD JAM","CLEAR ALL THREATS"]),118,84)
@@ -2324,7 +2335,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     modal_glitch = register_svg_asset("Glitch_Intro", make_nightmare_modal("GLITCH PROTOCOL",["ARROWS MOVE CORE","SURVIVE THE SIGNAL","NO DIAGONAL MOVEMENT"]),118,84)
     modal_glitch_win = register_svg_asset("Glitch_Win", make_nightmare_modal("CORE STABLE",["SURVIVED","BONUS: 100","RETURNING TO BOARD"]),118,84)
     modal_glitch_loss = register_svg_asset("Glitch_Loss", make_nightmare_modal("CORE UNSTABLE",["PROTOCOL FAILED","2 GARBAGE IN 2 LOCKS","RETURNING TO BOARD"]),118,84)
-    for m_asset in (modal_menu, modal_pausa, modal_gameover, modal_nightmare, modal_trial, modal_wave2, modal_wave3, modal_wave4, modal_core, modal_victory, modal_glitch, modal_glitch_win, modal_glitch_loss):
+    for m_asset in (modal_menu, modal_pausa, modal_gameover, modal_nm_gameover, modal_core_loss, modal_nightmare, modal_trial, modal_wave2, modal_wave3, modal_wave4, modal_core, modal_victory, modal_glitch, modal_glitch_win, modal_glitch_loss):
         all_zip_files[m_asset["md5ext"]] = m_asset["bytes"]
 
     pb = ScratchBlockBuilder("pan", var_map, list_map, bcast_specs)
@@ -2344,8 +2355,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:NM_Reduced",0),pb.op_and(pb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),pb.op_lt("$v:Trial_Timer",0.8))),[
                             pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:Trial_Timer",-25)),6),
                             pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Trial_Timer",12.5)))],
-                            [pb.stmt_if(pb.op_not(pb.op_eq("$v:Estado_Juego","PAUSA")),[
-                                pb.stmt_set_size(100),pb.stmt_goto_xy(0,6)])])])]),
+                            [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:NM_Reduced",0),pb.op_and(pb.op_eq("$v:Modo_Juego","NIGHTMARE"),pb.op_and(pb.op_or(pb.op_eq("$v:Estado_Juego","GAMEOVER"),pb.op_eq("$v:Estado_Juego","TRIAL_CLEAR")),pb.op_lt("$v:Resultado_Timer",0.8)))),[
+                                pb.stmt_if_else(pb.op_eq("$v:Estado_Juego","TRIAL_CLEAR"),[
+                                    pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:Resultado_Timer",-25)),6),pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Resultado_Timer",12.5)))],
+                                    [pb.stmt_goto_xy(0,pb.op_sub(6,pb.op_mul(pb.op_sub(0.8,"$v:Resultado_Timer"),15))),pb.stmt_set_size(100)])],
+                                [pb.stmt_if(pb.op_not(pb.op_eq("$v:Estado_Juego","PAUSA")),[pb.stmt_set_size(100),pb.stmt_goto_xy(0,6)])])])])]),
                 pb.stmt_wait(0.05)])
         ],
         x=40,
@@ -2370,7 +2384,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     ),
                     pb.stmt_if(
                         pb.op_eq("$v:Estado_Juego", "GAMEOVER"),
-                        [pb.stmt_switch_costume("GameOver_Modal")],
+                        [pb.stmt_if_else(pb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+                            pb.stmt_if_else(pb.op_and(pb.op_eq("$v:NM_Submode","TRIALS"),pb.op_eq("$v:Trial_Wave",5)),[pb.stmt_switch_costume("Core_Defeat")],[pb.stmt_switch_costume("Nightmare_GameOver")])],
+                            [pb.stmt_switch_costume("GameOver_Modal")])],
                     ),
                     pb.stmt_if(pb.op_eq("$v:Estado_Juego", "NIGHTMARE_INTRO"),
                         [pb.stmt_switch_costume("Nightmare_Intro")]),
@@ -2403,6 +2419,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             {k: v for k, v in modal_menu.items() if k != "bytes"},
             {k: v for k, v in modal_pausa.items() if k != "bytes"},
             {k: v for k, v in modal_gameover.items() if k != "bytes"},
+            {k: v for k, v in modal_nm_gameover.items() if k != "bytes"},
+            {k: v for k, v in modal_core_loss.items() if k != "bytes"},
             {k: v for k, v in modal_nightmare.items() if k != "bytes"},
             {k: v for k, v in modal_trial.items() if k != "bytes"},
             {k: v for k, v in modal_wave2.items() if k != "bytes"},
