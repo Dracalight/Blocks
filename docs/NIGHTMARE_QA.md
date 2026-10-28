@@ -9,7 +9,7 @@ Estado: checkpoint de desarrollo, **no release candidate**. La dirección de Ind
 - Confirmaciones de eventos: sellos vectoriales durante 0,8 s en el margen izquierdo para advertencia, impacto de garbage, bloqueo/desbloqueo de Hold, reducción de deuda, cadena, daño de blindaje y presión diferida. Se desplazan y cambian de escala; M los suprime. No se dibujan sobre el tablero ni la firma. Las alertas persistentes permanecen con M.
 - La línea completada usa el efecto existente. El blindaje muestra disfraces intacto y agrietado.
 
-Pendientes del catálogo: inicio y final animados para todos los objetivos; materialización y desmaterialización de arena; retorno; transición de selección y regreso al menú; verificación real del movimiento, la sincronización, los textos y la legibilidad. Los sellos de confirmación no cubren todos los efectos pedidos. La matriz R7 recoge los detalles de las nuevas señales de blindaje y pantallas finales.
+Las transiciones adicionales de R8 figuran en la matriz. Continúa pendiente verificar en ejecución gráfica su movimiento, sincronización, textos y legibilidad.
 
 ## Balance y simulación
 
@@ -38,4 +38,16 @@ No se han cambiado los parámetros de dificultad en esta pasada: modificar balan
 
 ## Avance R7
 
-Se incorporaron señales de entrada y destrucción de blindaje conectadas a los estados reales y entradas diferenciadas para derrota de Core, Game Over de Nightmare y victoria de Trials. La [matriz de animaciones](NIGHTMARE_ANIMATION_MATRIX.md) identifica efectos que aún faltan; por tanto no es una implementación completa. La [simulación con tablero persistente y comparación de Glitch](NIGHTMARE_BALANCE_R7.md) describe los límites de los bots y resultados. Siguen pendientes QA gráfico y de audio, iPad y balance humano.
+Se incorporaron señales de entrada y destrucción de blindaje conectadas a los estados reales y entradas diferenciadas para derrota de Core, Game Over de Nightmare y victoria de Trials. La [matriz de animaciones](NIGHTMARE_ANIMATION_MATRIX.md) refleja ahora también los cambios de R8. La [simulación con tablero persistente y comparación de Glitch](NIGHTMARE_BALANCE_R7.md) describe los límites de los bots y resultados. Siguen pendientes QA gráfico y de audio, iPad y balance humano.
+
+## Avance R8
+
+Selección de submodo y regreso al menú tienen movimiento breve no bloqueante. Trials muestra señales al iniciar, progresar y finalizar objetivos; en victoria la señal caduca. Glitch presenta arena y núcleo durante la entrada y los reduce en la salida, manteniendo congelado el tablero. M reduce esos movimientos y conserva los ataques y avisos. Las funciones se comprobaron con bloques y planificador sin renderer: **la calidad audiovisual real sigue sin validarse**.
+
+La simulación persistente de Trials, sus victorias/derrotas y restricciones se describen en [NIGHTMARE_TRIALS_R8.md](NIGHTMARE_TRIALS_R8.md). `test_adversarial.py` prueba doble basura con top-out, dos filas blindadas sin hueco y fallo/reintento de Glitch en Core. El fixture de Core asigna la oleada para aislar el caso y no es un recorrido completo.
+
+### Guía rápida para el OWNER
+
+Descarga `NEXUS-BLOCKS-ENDLESS.sb3` de la rama `feat/nightmare-mode-v1`. En Scratch abre Archivo → Cargar desde tu ordenador y selecciona el archivo. Pulsa la bandera, 4 para Nightmare y otra vez 4 para alternar ENDLESS/TRIALS; Enter confirma. M alterna movimiento reducido, P pausa y R reinicia.
+
+En Endless, Glitch puede llegar tras 60 segundos de tiempo de juego, en una fijación sin amenaza ni Hold Jam pendientes. En Trials se programa en la quinta ola a partir de la fijación 36, también esperando un estado seguro. Revisa la firma japonesa y el pulgar, los avisos y contadores, las transiciones, el audio y la fluidez. En Glitch usa las flechas, pausa y reanuda; comprueba que el tablero permanece congelado y se restaura. Si algo falla, indica modo, oleada, acción, resultado y, si es posible, una foto o grabación. La verificación en iPad sigue NOT RUN.

@@ -871,6 +871,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.vars["NM_Event"]="NONE"
     vm.call_proc("Trial_OnLock")
     assert vm.vars["Estado_Juego"] == "TRIAL_INTERMISSION"
+    assert vm.vars["NM_FX"] == "OBJECTIVE CLEAR" and vm.vars["NM_FXTime"] == .8
     vm.call_proc("Alternar_Pausa"); frozen_time=vm.vars["Tiempo_Juego"]
     vm.sim_timer += 1; vm.call_proc("Tick")
     assert vm.vars["Trial_Timer"] == 0 and vm.vars["Tiempo_Juego"] == frozen_time
@@ -878,6 +879,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     for _ in range(32):
         vm.sim_timer += .1; vm.call_proc("Tick")
     assert (vm.vars["Estado_Juego"],vm.vars["Trial_Wave"],vm.vars["Trial_Goal"]) == ("JUGANDO",2,25)
+    assert vm.vars["NM_FX"] == "OBJECTIVE START" and vm.vars["NM_FXTime"] > 0
     assert vm.vars["Trial_LineGoal"] == 2 and vm.vars["Trial_Lines"] == 0
     vm.vars.update(Trial_Count=24,Trial_Event=2,Trial_Required=2,NM_Event="NONE",NM_Jam=0,Lineas_Turno=0)
     vm.call_proc("Trial_OnLock")
@@ -889,6 +891,10 @@ def run_all_tests(sb3_path: str) -> List[str]:
                    Trial_Event=3,Trial_Required=3,NM_Event="NONE",NM_Jam=0,Trial_GlitchDone=1,Trial_LineGoal=4,Trial_Lines=4,Lineas_Turno=0)
     vm.call_proc("Trial_OnLock")
     assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
+    assert vm.vars["NM_FX"] == "OBJECTIVE CLEAR" and vm.vars["NM_FXTime"] > 0
+    for _ in range(10): vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["NM_FXTime"] <= 0
+    assert not any(str(costume).startswith("FX_") for _,_,costume in vm.stamps_log)
     vm.call_proc("Comenzar_Modo")
     assert vm.vars["Trial_Wave"] == 1 and vm.vars["Trial_Count"] == 0
     # Recorrido completo del guion, sin simular habilidad humana: limpiar la
@@ -923,7 +929,15 @@ def run_all_tests(sb3_path: str) -> List[str]:
     assert vm.vars["Estado_Juego"] == "GLITCH_INTRO"
     frozen_board=list(vm.lists["Tablero"])
     frozen_times=(vm.vars["Tiempo_Juego"],vm.vars["Reloj_Caida"],vm.vars["Bloqueo"])
-    for _ in range(10): vm.sim_timer += .1; vm.call_proc("Tick")
+    for _ in range(3): vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["G_Reveal"] == 0 and 50 < vm.vars["G_VisualScale"] < 100
+    assert any(costume == "G_ARENA" for _,_,costume in vm.stamps_log)
+    vm.call_proc("Alternar_Pausa"); transition_time=vm.vars["G_Timer"]
+    vm.sim_timer += .3; vm.call_proc("Tick"); assert vm.vars["G_Timer"] == transition_time
+    vm.call_proc("Alternar_Pausa")
+    vm.vars["NM_Reduced"] = 1; vm.call_proc("Glitch_Transition"); assert vm.vars["G_VisualScale"] == 100
+    vm.vars["NM_Reduced"] = 0
+    for _ in range(7): vm.sim_timer += .1; vm.call_proc("Tick")
     assert vm.vars["Estado_Juego"] == "GLITCH_PLAY"
     vm.call_proc("Glitch_Move %s %s",6,0); assert vm.vars["G_X"] == 6
     vm.call_proc("Alternar_Pausa"); frozen_core=(vm.vars["G_Time"],vm.vars["G_X"],vm.vars["G_HP"])

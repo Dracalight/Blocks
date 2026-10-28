@@ -44,6 +44,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   set('Proximo_Ataque',get('Tiempo_Juego')+1);await delay(100);assert.equal(get('Evento_Caos'),'GARBAGE INCOMING');await delay(1100);
   assert.equal(get('Tablero').slice(-10).filter(v=>Number(v)===8).length,9);
   await key('p');await key('4');assert.equal(get('Modo_Juego'),'NIGHTMARE');assert.equal(get('Estado_Juego'),'MENU');
+  assert.ok(Number(get('Menu_Timer'))>0,'nightmare selection starts a non-blocking menu transition');
   await key('Enter');assert.equal(get('Estado_Juego'),'NIGHTMARE_INTRO');
   await key('p');assert.equal(get('Estado_Juego'),'PAUSA');
   const intro=get('Nightmare_Intro');await delay(250);assert.equal(get('Nightmare_Intro'),intro);
