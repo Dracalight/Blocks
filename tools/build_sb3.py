@@ -797,7 +797,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         "Nightmare_Intro":0, "Pausa_Origen":"JUGANDO",
                         "NM_Event":"NONE", "NM_Warning":0, "NM_Rows":0,
                         "NM_Progress":0, "NM_Jam":0, "NM_Cooldown":0, "NM_Sequence":0, "NM_Cancelable":1,
-                        "NM_Chain":0, "NM_EventStart":"NONE", "NM_Top":0, "NM_Scan":1, "NM_Delayed":0}.items():
+                        "NM_Chain":0, "NM_EventStart":"NONE", "NM_Top":0, "NM_Scan":1, "NM_Delayed":0,
+                        "Armor_Row":0, "Armor_Hit":0}.items():
         var_specs[name] = ("v2_"+name, value)
     for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "4", "enter"]:
         var_specs["key_"+key] = ("v2_key_"+key, 0)
@@ -904,6 +905,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         ("Bloque_6_J", make_block_svg("#2979FF", "#99C2FF", "#0043B2")),
         ("Bloque_7_L", make_block_svg("#FF9100", "#FFD099", "#B25900")),
         ("Bloque_8_Flash", make_block_svg("#FFFFFF", "#FFFFCC", "#00F0FF")),
+        ("Bloque_9_Armor", '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><rect x=".5" y=".5" width="14" height="14" fill="#101010" stroke="#FFBC32"/><path d="M3 3H12V12H3Z M5 5H10V10H5Z" fill="none" stroke="#F5F2E9"/></svg>'),
+        ("Bloque_10_Cracked", '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><rect x=".5" y=".5" width="14" height="14" fill="#101010" stroke="#FFBC32"/><path d="M3 3H12V12H3Z M9 2L6 6 9 8 5 13" fill="none" stroke="#F5F2E9" stroke-width="1.3"/></svg>'),
         ("Bloque_Fantasma", make_ghost_block_svg(15)),
     ]
     motor_costumes = []
@@ -913,7 +916,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         motor_costumes.append({k: v for k, v in casset.items() if k != "bytes"})
 
     # HUD vectorial: cifras y estados estampados, sin monitores de variables.
-    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED"]:
+    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED","ARMOR INCOMING"]:
         safe_label = label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{safe_label}</text></svg>',65,12)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
@@ -1272,6 +1275,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_if(mb.op_eq("$v:NM_Event","CHAIN_DEBT"),[
                     mb.stmt_switch_costume("HUD_DEBT SOON"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","ARMOR_WARNING"),[
+                    mb.stmt_switch_costume("HUD_ARMOR INCOMING"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
                 mb.stmt_if(mb.op_eq("$v:NM_Event","DEBT"),[
                     mb.stmt_switch_costume("HUD_GARBAGE DEBT"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
                     mb.stmt_switch_costume("HUD_ROWS"),mb.stmt_goto_xy(-194,-87),mb.stmt_pen_stamp(),
@@ -1342,11 +1348,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         True,
         [
             mb.stmt_set_var("Lineas_Turno", 0),
+            mb.stmt_set_var("Armor_Hit", 0),
             mb.stmt_set_var("f", 20),
             mb.stmt_repeat_until(
                 mb.op_lt("$v:f", 1),
                 [
                     mb.stmt_set_var("fila_completa", 1),
+                    mb.stmt_set_var("Armor_Row", 0),
                     mb.stmt_set_var("c", 1),
                     mb.stmt_repeat(
                         10,
@@ -1359,9 +1367,19 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                                 mb.op_eq(mb.expr_list_item("Tablero", "$v:idx"), 0),
                                 [mb.stmt_set_var("fila_completa", 0)],
                             ),
+                            mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq(mb.expr_list_item("Tablero","$v:idx"),9)),[mb.stmt_set_var("Armor_Row",1)]),
                             mb.stmt_change_var("c", 1),
                         ],
                     ),
+                    # Una fila completa intacta se agrieta una sola vez por revisión.
+                    # Su resolución automática ocurre al fijar la próxima pieza.
+                    mb.stmt_if(mb.op_and(mb.op_eq("$v:fila_completa",1),mb.op_eq("$v:Armor_Row",1)),[
+                        mb.stmt_set_var("c",1),
+                        mb.stmt_repeat(10,[
+                            mb.stmt_set_var("idx",mb.op_add(mb.op_mul(mb.op_sub("$v:f",1),10),"$v:c")),
+                            mb.stmt_if(mb.op_eq(mb.expr_list_item("Tablero","$v:idx"),9),[mb.stmt_replace_item_list("Tablero","$v:idx",10)]),
+                            mb.stmt_change_var("c",1)]),
+                        mb.stmt_change_var("Armor_Hit",1),mb.stmt_set_var("fila_completa",0)]),
                     mb.stmt_if_else(
                         mb.op_eq("$v:fila_completa", 1),
                         [
@@ -1764,7 +1782,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Pausa_Origen", "JUGANDO"),
             mb.stmt_set_var("NM_Event", "NONE"),mb.stmt_set_var("NM_Warning", 0),
             mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Progress",0),
-            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),
+            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("Armor_Hit",0),
             mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(proc_vel_code, [], [], True),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
@@ -1796,6 +1814,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             call(proc_col_code,proc_col_args,["$v:Pieza_Actual","$v:Pieza_Col","$v:Pieza_Fila","$v:Pieza_Rotacion"]) ]),
         mb.stmt_if(mb.op_eq("$v:Colision_Detectada",1),[mb.stmt_set_var("Estado_Juego","GAMEOVER")]),
         mb.stmt_set_var("Bloqueo",-1),call(proc_ghost_code),mb.stmt_broadcast("Actualizar_UI")])
+    mb.define_proc("Nightmare_ArmorAttack",[],[],True,[
+        call("Garbage_Attack"),
+        mb.stmt_set_var("NM_Scan",191),
+        mb.stmt_repeat(10,[
+            mb.stmt_if(mb.op_eq(mb.expr_list_item("Tablero","$v:NM_Scan"),8),[
+                mb.stmt_replace_item_list("Tablero","$v:NM_Scan",9)]),
+            mb.stmt_change_var("NM_Scan",1)])])
     # Un solo evento comprometido. Las cuentas avanzan únicamente al fijar pieza.
     mb.define_proc("Nightmare_OnLock",[],[],True,[
         mb.stmt_set_var("NM_EventStart","$v:NM_Event"),
@@ -1821,6 +1846,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                             mb.stmt_set_var("NM_Chain",1),mb.stmt_set_var("NM_Event","DOUBLE"),
                             mb.stmt_set_var("NM_Warning",4),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)],
                             [mb.stmt_set_var("NM_Chain",2),mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)])]),
+                    mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",180),mb.op_eq(mb.op_mod("$v:NM_Sequence",4),2)),[
+                        mb.stmt_set_var("NM_Event","ARMOR_WARNING"),mb.stmt_set_var("NM_Warning",4)]),
                     mb.stmt_change_var("NM_Sequence",1),mb.stmt_play_sound("Sonido_Caos")])])],
             [mb.stmt_if(mb.op_eq("$v:NM_EventStart","DOUBLE"),[
                 mb.stmt_if(mb.op_eq("$v:NM_Cancelable",1),[
@@ -1848,6 +1875,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
                     mb.stmt_set_var("NM_Event","DEBT"),mb.stmt_set_var("NM_Warning",12),mb.stmt_set_var("NM_Rows",2),
                     mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Chain",0)])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","ARMOR_WARNING"),[
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    call("Nightmare_ArmorAttack"),mb.stmt_set_var("NM_Event","NONE")])]),
              mb.stmt_if(mb.op_eq("$v:NM_EventStart","DEBT"),[
                 mb.stmt_change_var("NM_Progress","$v:Lineas_Turno"),
                 mb.stmt_repeat(2,[mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Progress",1),mb.op_gt("$v:NM_Rows",0)),[

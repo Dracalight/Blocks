@@ -751,6 +751,79 @@ def run_all_tests(sb3_path: str) -> List[str]:
     report.append("[PASS] Chaos Chain: ambas secuencias, aviso completo, convivencia y reinicio.")
     report.append("[PASS] Nightmare: aviso y cancelación de basura doble; Hold Jam de siete fijaciones.")
     report.append("[PASS] Nightmare: deuda, progreso parcial, vencimiento y aviso final de dos piezas.")
+    # Blindaje real del SB3: una fila intacta completa no requiere huecos.
+    vm.call_proc("Iniciar_Partida")
+    vm.lists["Tablero"][-10:] = [9] * 10  # caso adversarial sin celdas ordinarias
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.lists["Tablero"][-10:] == [10] * 10
+    assert vm.vars["Armor_Hit"] == 1 and vm.vars["Lineas_Turno"] == 0 and vm.vars["Puntuacion"] == 0
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.vars["Armor_Hit"] == 0 and vm.vars["Lineas_Turno"] == 1
+    assert not any(vm.lists["Tablero"]) and vm.vars["Puntuacion"] == 100
+    # Compactación simultánea: dos filas se agrietan, una ordinaria se elimina.
+    vm.call_proc("Iniciar_Partida")
+    vm.lists["Tablero"][-30:] = [9] * 10 + [2] * 10 + [9] * 10
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.vars["Armor_Hit"] == 2 and vm.vars["Lineas_Turno"] == 1
+    assert vm.lists["Tablero"][-20:] == [10] * 20
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.vars["Lineas_Turno"] == 2 and not any(vm.lists["Tablero"])
+    # T-spin double: una fila normal se limpia y la blindada se resuelve
+    # automáticamente en la siguiente fijación sin alcanzar ningún hueco.
+    vm.call_proc("Iniciar_Partida")
+    for col in range(1,11):
+        if col not in {4,5,6}: vm.lists["Tablero"][180+col-1] = 9
+        if col != 5: vm.lists["Tablero"][190+col-1] = 8
+    vm.lists["Tablero"][173] = 8
+    vm.vars.update(Pieza_Actual=3,Pieza_Rotacion=1,Pieza_Col=5,Pieza_Fila=19)
+    vm.call_proc("Rotar_Pieza")
+    assert vm.vars["Pieza_Rotacion"] == 2 and vm.vars["Rotacion_Exito"] == 1
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Lineas_Turno"] == 1 and vm.vars["Armor_Hit"] == 1
+    assert all(vm.lists["Tablero"][-10:]) and vm.lists["Tablero"][-10:].count(10) == 7
+    vm.vars.update(Pieza_Actual=2,Pieza_Rotacion=0,Pieza_Col=5,Pieza_Fila=8)
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Lineas_Turno"] == 1 and 10 not in vm.lists["Tablero"]
+    # Inserción avisada usa el garbage existente y conserva su único hueco.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="ARMOR_WARNING", NM_Warning=4, Lineas_Turno=0)
+    for _ in range(3): vm.call_proc("Nightmare_OnLock")
+    assert not any(vm.lists["Tablero"]) and vm.vars["NM_Warning"] == 1
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and vm.lists["Tablero"][-10:].count(9) == 9
+    assert vm.lists["Tablero"][-10:].count(0) == 1
+    vm.call_proc("Comprobar_Colision %s %s %s %s",vm.vars["Pieza_Actual"],vm.vars["Pieza_Col"],vm.vars["Pieza_Fila"],vm.vars["Pieza_Rotacion"])
+    assert vm.vars["Colision_Detectada"] == 0
+    vm.call_proc("Iniciar_Partida")
+    vm.lists["Tablero"][0] = 8
+    vm.vars.update(NM_Event="ARMOR_WARNING", NM_Warning=1, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["Estado_Juego"] == "GAMEOVER" and vm.vars["NM_Event"] == "NONE"
+    assert vm.lists["Tablero"][-10:].count(9) == 9
+    vm.call_proc("Iniciar_Partida")
+    assert not any(vm.lists["Tablero"]) and vm.vars["Armor_Hit"] == 0
+    # Comparar la compactación Scratch con una especificación simultánea
+    # independiente sobre filas mixtas, completas y vacías.
+    qa_rng = random.Random(311)
+    for _ in range(12):
+        vm.call_proc("Iniciar_Partida")
+        rows = []
+        for _row in range(20):
+            row = [qa_rng.choice((1, 3, 8, 9, 10)) for _col in range(10)]
+            if qa_rng.random() < .8: row[qa_rng.randrange(10)] = 0
+            rows.append(row)
+        retained, cleared, damaged = [], 0, 0
+        for row in rows:
+            if all(row) and 9 in row:
+                retained.append([10 if cell == 9 else cell for cell in row]); damaged += 1
+            elif all(row): cleared += 1
+            else: retained.append(row)
+        expected = [[0]*10 for _ in range(cleared)] + retained
+        vm.lists["Tablero"] = [cell for row in rows for cell in row]
+        vm.call_proc("Revisar_Y_Eliminar_Lineas")
+        assert vm.lists["Tablero"] == [cell for row in expected for cell in row]
+        assert vm.vars["Lineas_Turno"] == cleared and vm.vars["Armor_Hit"] == damaged
+    report.append("[PASS] Blindaje Scratch: aviso, daño, resolución automática, compactación y reinicio.")
     vm.vars["Modo_Juego"]="NORMAL"
     vm.call_proc("Iniciar_Partida")
     # Ejecutar el mismo Tick que invoca el hilo principal, con tiempo simulado.

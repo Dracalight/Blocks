@@ -6,10 +6,14 @@ El calendario inicial alterna Double Garbage y Hold Jam tras al menos 20 segundo
 
 Desde 120 segundos, el calendario puede anunciar una de dos cadenas deterministas: Double Garbage → Hold Jam o Hold Jam → Garbage Debt. Ambos nombres se muestran desde el inicio y la segunda etapa tiene dos fijaciones de aviso. Una instantánea del evento al comenzar cada fijación impide descontar varias etapas en la misma pieza. Hold Jam puede solaparse con la deuda de la cadena, y el HUD muestra ambos estados en zonas diferentes. No comienza otra amenaza mientras haya una comprometida. Si hay al menos ocho celdas ocupadas en las cuatro filas superiores, se aplaza la siguiente amenaza y se muestra `PRESSURE DELAYED`; las amenazas ya anunciadas no se borran. Estos umbrales son provisionales y no sustituyen pruebas de jugabilidad.
 
-Este es un **checkpoint incompleto**: todavía no hay selección Endless/Trials, blindaje integrado, oleadas, Glitch Protocol ni el catálogo de animaciones. La entrada animada es inicial y los avisos son estáticos. El [prototipo aislado de blindaje](NIGHTMARE_ARMOR_SPIKE.md) no está integrado y no ha demostrado que los huecos sean siempre alcanzables. No representa el modo terminado ni está listo para merge.
+El blindaje integrado usa dos etapas: una fila completa intacta se agrieta sin puntuar y se elimina automáticamente en la siguiente fijación, sin necesidad de acceder a un hueco. La variante y sus límites se describen en [el análisis de blindaje](NIGHTMARE_ARMOR_SPIKE.md).
+
+Este es un **checkpoint incompleto**: todavía no hay selección Endless/Trials, oleadas, Glitch Protocol ni el catálogo de animaciones. La entrada animada es inicial y los avisos son estáticos. No representa el modo terminado ni está listo para merge.
 
 Las comprobaciones Python cubren la pausa de la introducción, el límite de gravedad, un T-spin double con tres esquinas ocupadas, los contadores de Double Garbage y Hold Jam, cancelación parcial y total de basura, vencimiento de deuda, las dos cadenas, aplazamiento por altura y top-out durante una cadena. El planificador oficial funciona sin renderer y no constituye una prueba visual. Siguen pendientes evaluación visual, gameplay prolongado y teclado físico en iPad.
 
 En esta ejecución se abrió el editor oficial de Scratch, que mostró `Your Browser Does Not Support WebGL`; no se pudo cargar el proyecto ni validar visualmente la animación o el HUD. No se midió el rendimiento gráfico ni se probó audio.
+
+Los SVG del fondo Nightmare, la introducción, la alerta de blindaje y los bloques intacto y agrietado se extrajeron del SB3 y renderizaron con Inkscape para inspección estática. Esa revisión no ejecuta Scratch ni verifica escalado, superposición de HUD, movimiento o interacción real.
 
 Se utiliza el contrato design-taste-frontend aportado por el OWNER: su skill original no estaba instalada. El arte provisional usa fondo oscuro, texto claro y ámbar de advertencia, con trazos rectos y tipografía técnica.

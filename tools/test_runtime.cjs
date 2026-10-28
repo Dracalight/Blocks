@@ -56,6 +56,10 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   await key('p');const chainWarning=get('NM_Warning');await delay(250);assert.equal(get('NM_Warning'),chainWarning);
   await key('p');set('NM_Warning',1);await key(' ');
   assert.equal(get('NM_Event'),'CHAIN_JAM');assert.equal(Number(get('NM_Warning')),2);
+  await key('r');await delay(950);assert.equal(get('Estado_Juego'),'JUGANDO');
+  set('NM_Event','ARMOR_WARNING');set('NM_Warning',1);await key(' ');
+  assert.equal(get('NM_Event'),'NONE');
+  assert.equal(get('Tablero').slice(-10).filter(v=>Number(v)===9).length,9);
   console.log(JSON.stringify({pass:true,results,interaction:'pause/resume, arrows, rotate, hold, hard/soft drop, restart, modes, chaos events, garbage'},null,2));
  }finally{vm.quit()}
 })().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1)});
