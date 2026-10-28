@@ -2,6 +2,8 @@
 
 Click the green flag, select **1 NORMAL**, **2 HARD** or **3 CHAOS**, and press **Enter**. Normal is the default.
 
+In the Nightmare development branch, select **4 NIGHTMARE**; press **4 again in the menu** to switch between ENDLESS and TRIALS. Press Enter to start. The selected submode remains active when restarting with R.
+
 | Key | Action | Response |
 | --- | --- | --- |
 | Left Arrow | Move left | Immediate step, 160 ms initial delay, then every 50 ms. |

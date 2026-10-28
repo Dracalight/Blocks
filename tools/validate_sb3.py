@@ -824,7 +824,63 @@ def run_all_tests(sb3_path: str) -> List[str]:
         assert vm.lists["Tablero"] == [cell for row in expected for cell in row]
         assert vm.vars["Lineas_Turno"] == cleared and vm.vars["Armor_Hit"] == damaged
     report.append("[PASS] Blindaje Scratch: aviso, daño, resolución automática, compactación y reinicio.")
+    # Trials: cada hito anunciado se inicia una sola vez y se difiere si
+    # otra amenaza sigue activa. La victoria espera a que termine el guion.
+    vm.vars.update(Modo_Juego="NIGHTMARE", NM_Submode="TRIALS")
+    vm.call_proc("Iniciar_Partida")
+    for wave, event, count, expected in [
+        (1,0,9,"DOUBLE"),(2,0,5,"JAM_WARNING"),(2,1,17,"JAM_WARNING"),
+        (3,0,5,"DEBT"),(3,1,17,"DEBT"),(4,0,5,"ARMOR_WARNING"),
+        (4,1,16,"DOUBLE"),(4,2,27,"JAM_WARNING"),
+        (5,0,6,"DOUBLE"),(5,1,18,"JAM_WARNING"),(5,2,29,"DOUBLE")]:
+        vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=wave,Trial_Event=event,Trial_Count=count,
+                       Trial_Goal=15+5*wave,Trial_Required=1 if wave==1 else (2 if wave<4 else 3),
+                       NM_Event="NONE",NM_Jam=0,NM_Chain=0)
+        vm.call_proc("Trial_OnLock")
+        assert vm.vars["NM_Event"] == expected and vm.vars["Trial_Event"] == event+1
+    vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=1,Trial_Count=19,Trial_Goal=20,
+                   Trial_Event=1,Trial_Required=1,NM_Event="DOUBLE",NM_Jam=0)
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "JUGANDO"  # no se descarta un ataque
+    vm.vars["NM_Event"]="NONE"
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_INTERMISSION"
+    vm.call_proc("Alternar_Pausa"); frozen_time=vm.vars["Tiempo_Juego"]
+    vm.sim_timer += 1; vm.call_proc("Tick")
+    assert vm.vars["Trial_Timer"] == 0 and vm.vars["Tiempo_Juego"] == frozen_time
+    vm.call_proc("Alternar_Pausa")
+    for _ in range(32):
+        vm.sim_timer += .1; vm.call_proc("Tick")
+    assert (vm.vars["Estado_Juego"],vm.vars["Trial_Wave"],vm.vars["Trial_Goal"]) == ("JUGANDO",2,25)
+    vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=5,Trial_Count=39,Trial_Goal=40,
+                   Trial_Event=3,Trial_Required=3,NM_Event="NONE",NM_Jam=0)
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
+    vm.call_proc("Comenzar_Modo")
+    assert vm.vars["Trial_Wave"] == 1 and vm.vars["Trial_Count"] == 0
+    # Recorrido completo del guion, sin simular habilidad humana: limpiar la
+    # pila en cada iteración aísla temporizadores y progresión de oleadas.
+    vm.call_proc("Iniciar_Partida")
+    seen_waves = {1}
+    for _ in range(300):
+        if vm.vars["Estado_Juego"] == "TRIAL_CLEAR": break
+        if vm.vars["Estado_Juego"] == "TRIAL_INTERMISSION":
+            before_board = list(vm.lists["Tablero"])
+            for _tick in range(31):
+                vm.sim_timer += .1; vm.call_proc("Tick")
+            assert vm.lists["Tablero"] == before_board
+            seen_waves.add(vm.vars["Trial_Wave"])
+        else:
+            vm.lists["Tablero"] = [0] * 200  # fixture, no partida real
+            vm.vars["Lineas_Turno"] = 0
+            vm.call_proc("Nightmare_OnLock")
+            assert vm.vars["Estado_Juego"] == "JUGANDO"
+            vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR" and seen_waves == {1,2,3,4,5}
+    report.append("[PASS] Trials: once hitos, ataque pendiente, pausa, avance, victoria y reinicio.")
+    vm.vars["NM_Submode"]="ENDLESS"
     vm.vars["Modo_Juego"]="NORMAL"
+    vm.sim_timer=0  # el siguiente fixture usa un origen temporal nuevo
     vm.call_proc("Iniciar_Partida")
     # Ejecutar el mismo Tick que invoca el hilo principal, con tiempo simulado.
     for n in range(1,1201):

@@ -8,7 +8,9 @@ Desde 120 segundos, el calendario puede anunciar una de dos cadenas determinista
 
 El blindaje integrado usa dos etapas: una fila completa intacta se agrieta sin puntuar y se elimina automáticamente en la siguiente fijación, sin necesidad de acceder a un hueco. La variante y sus límites se describen en [el análisis de blindaje](NIGHTMARE_ARMOR_SPIKE.md).
 
-Este es un **checkpoint incompleto**: todavía no hay selección Endless/Trials, oleadas, Glitch Protocol ni el catálogo de animaciones. La entrada animada es inicial y los avisos son estáticos. No representa el modo terminado ni está listo para merge.
+Pulsar 4 de nuevo en el menú Nightmare alterna ENDLESS y TRIALS. Trials tiene cinco metas de 20/25/30/35/40 fijaciones y un guion fijo de basura, Hold Jam, deudas, blindaje y cadenas. Conserva el tablero, espera a que termine cualquier amenaza comprometida y presenta una transición de tres segundos congelados; P puede pausarla. La quinta ola se presenta como NIGHTMARE CORE. El contador del HUD muestra ola, fijaciones y objetivo. Los hitos y el recorrido completo se han probado con fixtures; **no se han equilibrado mediante partidas humanas**.
+
+Este es un **checkpoint incompleto**: Glitch Protocol y gran parte del catálogo audiovisual siguen pendientes. Las transiciones tienen movimiento inicial y los avisos siguen siendo estáticos. No representa el modo terminado ni está listo para merge.
 
 Las comprobaciones Python cubren la pausa de la introducción, el límite de gravedad, un T-spin double con tres esquinas ocupadas, los contadores de Double Garbage y Hold Jam, cancelación parcial y total de basura, vencimiento de deuda, las dos cadenas, aplazamiento por altura y top-out durante una cadena. El planificador oficial funciona sin renderer y no constituye una prueba visual. Siguen pendientes evaluación visual, gameplay prolongado y teclado físico en iPad.
 

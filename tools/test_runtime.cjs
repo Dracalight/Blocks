@@ -60,6 +60,13 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   set('NM_Event','ARMOR_WARNING');set('NM_Warning',1);await key(' ');
   assert.equal(get('NM_Event'),'NONE');
   assert.equal(get('Tablero').slice(-10).filter(v=>Number(v)===9).length,9);
+  await key('p');await key('4');await key('4');assert.equal(get('NM_Submode'),'TRIALS');
+  await key('Enter');await delay(950);assert.equal(get('Estado_Juego'),'JUGANDO');
+  set('Trial_Count',9);await key(' ');assert.equal(get('NM_Event'),'DOUBLE');
+  set('NM_Event','NONE');set('Trial_Event',1);set('Trial_Count',19);await key(' ');
+  assert.equal(get('Estado_Juego'),'TRIAL_INTERMISSION');await key('p');
+  const trialTimer=get('Trial_Timer');await delay(300);assert.equal(get('Trial_Timer'),trialTimer);
+  await key('p');await delay(3200);assert.equal(Number(get('Trial_Wave')),2);assert.equal(get('Estado_Juego'),'JUGANDO');
   console.log(JSON.stringify({pass:true,results,interaction:'pause/resume, arrows, rotate, hold, hard/soft drop, restart, modes, chaos events, garbage'},null,2));
  }finally{vm.quit()}
 })().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1)});
