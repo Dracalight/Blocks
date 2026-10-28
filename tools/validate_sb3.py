@@ -644,6 +644,26 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.call_proc("Actualizar_Velocidad_Y_Caos")
     assert vm.vars["Velocidad_Caida"] >= .07
     report.append("[PASS] Nightmare: intro y pausa, reanudación y límite de gravedad.")
+    # Confirmaciones visuales: selección determinista, reloj pausado y reinicio.
+    for values, expected in [
+        ({"NM_EventStart":"NONE", "NM_Event":"DOUBLE"}, "WARNING"),
+        ({"NM_EventStart":"NONE", "NM_Delayed":1}, "PRESSURE"),
+        ({"NM_EventStart":"DEBT", "NM_Event":"DEBT", "NM_OldRows":2, "NM_Rows":1}, "DEBT PAID"),
+        ({"NM_OldJam":0, "NM_Jam":7}, "JAM LOCK"),
+        ({"NM_OldJam":1, "NM_Jam":0}, "JAM FREE"),
+        ({"NM_EventStart":"DOUBLE", "NM_Event":"CHAIN_JAM", "NM_Chain":1}, "CHAIN"),
+        ({"Armor_Hit":1}, "ARMOR HIT")]:
+        vm.vars.update(NM_EventStart="NONE",NM_Event="NONE",NM_OldRows=0,NM_Rows=0,
+                       NM_OldJam=0,NM_Jam=0,NM_OldDelayed=0,NM_Delayed=0,NM_Chain=0,Armor_Hit=0,NM_FX="NONE",NM_FXTime=0)
+        vm.vars.update(values); vm.call_proc("Nightmare_VisualCue")
+        assert vm.vars["NM_FX"] == expected and vm.vars["NM_FXTime"] == .8
+    vm.vars.update(Estado_Juego="JUGANDO",NM_Event="NONE",NM_FXTime=.8,Tiempo_Juego=0)
+    vm.call_proc("Alternar_Pausa"); vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["NM_FXTime"] == .8
+    vm.call_proc("Alternar_Pausa"); vm.sim_timer += .1; vm.call_proc("Tick")
+    assert 0 < vm.vars["NM_FXTime"] < .8
+    vm.call_proc("Iniciar_Partida"); assert vm.vars["NM_FXTime"] == 0
+    report.append("[PASS] Nightmare: señales visuales, pausa, reanudación y reinicio.")
     # Pruebas del procesador por pieza: avisos, cancelación y duración.
     vm.call_proc("Iniciar_Partida")
     vm.vars.update(NM_Event="DOUBLE", NM_Warning=4, NM_Rows=2, Lineas_Turno=0)

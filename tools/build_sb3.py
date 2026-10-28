@@ -815,7 +815,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         "NM_Event":"NONE", "NM_Warning":0, "NM_Rows":0,
                         "NM_Progress":0, "NM_Jam":0, "NM_Cooldown":0, "NM_Sequence":0, "NM_Cancelable":1,
                         "NM_Chain":0, "NM_EventStart":"NONE", "NM_Top":0, "NM_Scan":1, "NM_Delayed":0,
-                        "Armor_Row":0, "Armor_Hit":0, "NM_Submode":"ENDLESS", "Trial_Wave":1,
+                        "Armor_Row":0, "Armor_Hit":0, "NM_FX":"NONE", "NM_FXTime":0, "NM_OldRows":0, "NM_OldJam":0, "NM_OldDelayed":0, "NM_Submode":"ENDLESS", "Trial_Wave":1,
                         "Trial_Count":0, "Trial_Event":0, "Trial_Goal":20, "Trial_Timer":0, "Trial_Required":1, "Trial_Lines":0, "Trial_LineGoal":0,
                         "Trial_GlitchDone":0, "G_Timer":0, "G_Time":0, "G_Phase":0, "G_PrevPhase":-1,
                         "G_Inner":0, "G_X":0, "G_Y":-45, "G_TargetX":0, "G_TargetY":0,
@@ -940,6 +940,14 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","ENDLESS","TRIALS","WAVE","/","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED","ARMOR INCOMING","SIGNAL BEAM","TARGET MARKER","PULSE RING","SWEEP WALL","DATA FRAGMENTS","CHARGE","ACTIVE","CORE HP","MOTION LOW"]:
         safe_label = label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{safe_label}</text></svg>',65,12)
+        all_zip_files[asset["md5ext"]]=asset["bytes"]
+        motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
+
+    # Short, bounded event confirmations stay in the lower left rail, never
+    # over the playfield or creator signature. Timings use the game clock.
+    for label in ("WARNING", "IMPACT", "JAM LOCK", "JAM FREE", "DEBT PAID", "ARMOR HIT", "CHAIN", "PRESSURE"):
+        svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="16"><path d="M2 1H118V15H2Z" fill="#101010" stroke="#FFBC32"/><path d="M6 4V12 M114 4V12" stroke="#FFBC32"/><text x="60" y="11.5" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#F5F2E9">{label}</text></svg>'
+        asset = register_svg_asset("FX_"+label,svg,60,8)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
         motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
 
@@ -1349,6 +1357,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_if(mb.op_eq("$v:NM_Chain",1),[mb.stmt_switch_costume("HUD_CHAIN: DOUBLE > JAM"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
                 mb.stmt_if(mb.op_eq("$v:NM_Chain",2),[mb.stmt_switch_costume("HUD_CHAIN: JAM > DEBT"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
                 mb.stmt_if(mb.op_eq("$v:NM_Delayed",1),[mb.stmt_switch_costume("HUD_PRESSURE DELAYED"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_FXTime",0),mb.op_eq("$v:NM_Reduced",0)),[
+                    mb.stmt_set_size(mb.op_add(74,mb.op_mul("$v:NM_FXTime",10))),
+                    mb.stmt_switch_costume(mb.op_join("FX_","$v:NM_FX")),
+                    mb.stmt_goto_xy(-160,mb.op_add(-127,mb.op_mul("$v:NM_FXTime",4))),mb.stmt_pen_stamp(),mb.stmt_set_size(70)]),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Reduced",1),mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_and(mb.op_eq("$v:NM_Jam",0),mb.op_eq("$v:NM_Delayed",0)))),
                     [mb.stmt_switch_costume("HUD_MOTION LOW"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
                 mb.stmt_set_size(100)]),
@@ -1591,8 +1603,10 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 [mb.stmt_call_proc(proc_spawn_code, [], [], True)],
             ),
             mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq("$v:Estado_Juego","JUGANDO")),
-                [mb.stmt_call_proc("Nightmare_OnLock", [], [], True),
+                [mb.stmt_set_var("NM_OldRows","$v:NM_Rows"),mb.stmt_set_var("NM_OldJam","$v:NM_Jam"),mb.stmt_set_var("NM_OldDelayed","$v:NM_Delayed"),
+                 mb.stmt_call_proc("Nightmare_OnLock", [], [], True),
                  mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_call_proc("Trial_OnLock", [], [], True)]),
+                 mb.stmt_call_proc("Nightmare_VisualCue", [], [], True),
                  mb.stmt_if(mb.op_and(mb.op_and(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0))),
                     mb.op_or(mb.op_and(mb.op_eq("$v:NM_Submode","ENDLESS"),mb.op_gt("$v:Tiempo_Juego","$v:G_Next")),
                         mb.op_and(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Trial_Wave",5)),mb.op_and(mb.op_gt("$v:Trial_Count",35),mb.op_eq("$v:Trial_GlitchDone",0))))),
@@ -1848,7 +1862,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Pausa_Origen", "JUGANDO"),
             mb.stmt_set_var("NM_Event", "NONE"),mb.stmt_set_var("NM_Warning", 0),
             mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Progress",0),
-            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("Armor_Hit",0),
+            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("NM_FX","NONE"),mb.stmt_set_var("NM_FXTime",0),mb.stmt_set_var("Armor_Hit",0),
             mb.stmt_set_var("Trial_Wave",1),mb.stmt_set_var("Trial_Count",0),mb.stmt_set_var("Trial_Event",0),mb.stmt_set_var("Trial_Goal",20),mb.stmt_set_var("Trial_Timer",0),mb.stmt_set_var("Trial_Required",1),mb.stmt_set_var("Trial_Lines",0),mb.stmt_set_var("Trial_LineGoal",0),mb.stmt_set_var("Trial_GlitchDone",0),mb.stmt_set_var("G_Next",60),
             mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_Inner",0),
             mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-45),mb.stmt_set_var("G_TargetX",0),mb.stmt_set_var("G_TargetY",0),mb.stmt_set_var("G_HP",3),
@@ -1946,6 +1960,16 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_set_var("G_Success",0),mb.stmt_set_var("Estado_Juego","GLITCH_RESULT"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI")],
                 [call("Glitch_Render")])],
             [mb.stmt_set_var("G_Success",1),mb.stmt_set_var("Estado_Juego","GLITCH_RESULT"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI")])])
+    def nm_cue(label):
+        return [mb.stmt_set_var("NM_FX",label),mb.stmt_set_var("NM_FXTime",0.8)]
+    mb.define_proc("Nightmare_VisualCue",[],[],True,[
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_EventStart","NONE"),mb.op_not(mb.op_eq("$v:NM_Event","NONE"))),nm_cue("WARNING")),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_OldDelayed",0),mb.op_eq("$v:NM_Delayed",1)),nm_cue("PRESSURE")),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_EventStart","DEBT"),mb.op_lt("$v:NM_Rows","$v:NM_OldRows")),nm_cue("DEBT PAID")),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_OldJam",0),mb.op_gt("$v:NM_Jam",0)),nm_cue("JAM LOCK")),
+        mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_OldJam",0),mb.op_eq("$v:NM_Jam",0)),nm_cue("JAM FREE")),
+        mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Chain",0),mb.op_not(mb.op_eq("$v:NM_EventStart","$v:NM_Event"))),nm_cue("CHAIN")),
+        mb.stmt_if(mb.op_gt("$v:Armor_Hit",0),nm_cue("ARMOR HIT"))])
     # Un solo evento comprometido. Las cuentas avanzan únicamente al fijar pieza.
     mb.define_proc("Nightmare_OnLock",[],[],True,[
         mb.stmt_set_var("NM_EventStart","$v:NM_Event"),
@@ -1981,6 +2005,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                         mb.stmt_change_var("NM_Progress",-2),mb.stmt_change_var("NM_Rows",-1)])])]),
                 mb.stmt_change_var("NM_Warning",-1),
                 mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    mb.stmt_if(mb.op_gt("$v:NM_Rows",0),nm_cue("IMPACT")),
                     mb.stmt_repeat("$v:NM_Rows",[mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[call("Garbage_Attack")])]),
                     mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Event","NONE"),
                     mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Chain",1),mb.op_eq("$v:Estado_Juego","JUGANDO")),[
@@ -2124,6 +2149,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_set_var("Estado_Juego","JUGANDO"),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI"),call(proc_render_code)])]),
         mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[
             mb.stmt_change_var("Tiempo_Juego","$v:Delta"),
+            mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_gt("$v:NM_FXTime",0)),[mb.stmt_change_var("NM_FXTime",mb.op_sub(0,"$v:Delta"))]),
             mb.stmt_if(mb.op_eq("$v:Modo_Juego","CHAOS"),[
                 mb.stmt_set_var("Intervalo_Ataque",mb.op_sub(25,mb.op_div("$v:Tiempo_Juego",30))),
                 mb.stmt_if(mb.op_lt("$v:Intervalo_Ataque",10),[mb.stmt_set_var("Intervalo_Ataque",10)]),
