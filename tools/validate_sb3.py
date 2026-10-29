@@ -625,7 +625,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.vars["Modo_Juego"] = "NIGHTMARE"
     vm.call_proc("Comenzar_Modo")
     assert vm.vars["Estado_Juego"] == "NIGHTMARE_INTRO"
-    assert abs(vm.vars["Velocidad_Caida"] - .23) < 1e-9
+    assert abs(vm.vars["Velocidad_Caida"] - .18) < 1e-9
     vm.sim_timer += .1
     vm.call_proc("Tick")
     intro_before = vm.vars["Nightmare_Intro"]
@@ -705,8 +705,8 @@ def run_all_tests(sb3_path: str) -> List[str]:
         assert sum(v == 8 for v in vm.lists["Tablero"]) == 9*rows
     report.append("[PASS] Triple: aviso, cancelación y materialización única de 0–3 filas (intérprete).")
     vm.call_proc("Iniciar_Partida")
-    vm.vars.update(Tiempo_Juego=21, Lineas_Turno=0)
-    for _ in range(6):
+    vm.vars.update(Tiempo_Juego=13, Lineas_Turno=0)
+    for _ in range(5):
         vm.call_proc("Nightmare_OnLock")
     assert vm.vars["NM_Event"] == "DOUBLE" and vm.vars["NM_Warning"] == 4
     vm.call_proc("Iniciar_Partida")

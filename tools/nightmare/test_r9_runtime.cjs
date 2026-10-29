@@ -21,10 +21,10 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     assert.equal(get('Tablero').slice(-30).filter(x=>Number(x)===8).length,27);
     for (let i=0;i<3;i++) assert.equal(get('Tablero').slice(-30+i*10,-20+i*10 || undefined).filter(x=>Number(x)===0).length,1);
     set('NM_BurstNext', Number(get('Tiempo_Juego'))+.1); await wait(350);
-    assert.equal(Number(get('NM_Burst')),1); assert.ok(Number(get('Velocidad_Caida')) < .13);
+    assert.equal(Number(get('NM_Burst')),1); assert.ok(Number(get('Velocidad_Caida')) < .095);
     await key('p'); const t=get('Tiempo_Juego'); await wait(250); assert.equal(get('Tiempo_Juego'),t);
     await key('p'); set('NM_BurstEnd',Number(get('Tiempo_Juego'))+.1); await wait(350);
-    assert.equal(Number(get('NM_Burst')),0); assert.ok(Number(get('Velocidad_Caida'))>.20);
+    assert.equal(Number(get('NM_Burst')),0); assert.ok(Number(get('Velocidad_Caida'))>.15);
     // Exercise actual scheduler and real block scripts using state fixtures.
     set('Estado_Juego','GLITCH_PLAY'); set('G_Time',.7); set('G_PrevPhase',0);
     set('G_X',0); set('G_Y',0); set('G_HP',3); set('G_Invuln',0); await wait(90);

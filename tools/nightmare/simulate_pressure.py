@@ -29,7 +29,7 @@ for seed in (11, 23, 37, 41, 53, 67):
         event = vm.vars['NM_Event']
         if vm.vars['NM_Sequence'] != before[1]: counts[event] += 1
         assert vm.vars['NM_Warning'] >= 0
-        assert 0 <= vm.vars['NM_Rows'] <= 2
+        assert 0 <= vm.vars['NM_Rows'] <= 3
         assert 0 <= vm.vars['NM_Jam'] <= 7
         assert len(vm.lists['Tablero']) == 200
         assert vm.vars['Estado_Juego'] == 'JUGANDO'

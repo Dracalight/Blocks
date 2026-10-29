@@ -1,51 +1,49 @@
-# NIGHTMARE R9 — avance parcial, NO READY FOR OWNER QA
+# NIGHTMARE R9 — NO READY FOR OWNER QA
 
-Base: `f2fd2d64cb7904c950aa7c83f2ebf1b653eb0015`. PR #2 sigue Draft. Esta entrega no cierra R9 y no acredita que NIGHTMARE sea más difícil que CHAOS en partidas humanas.
+Continuación desde `a533aff89a91ecac0dfd0f5fe68435cd3e22fffa`. PR #2 Draft; no fusionar. **RUNTIME_VISUAL_QA_BLOCKED**: el editor oficial en el navegador disponible mostró `Your Browser Does Not Support WebGL`; el ejecutor no tiene Chromium, Firefox ni Xvfb. Hay bibliotecas EGL, pero no un navegador o instalación de renderer ejecutable. No se comprobó audio, controles humanos, iPad ni imágenes del juego. La VM oficial usada abajo no incluye renderer/audio.
 
-## Hallazgos y cambios
+## Cambios y hallazgos
 
-- Los cinco ataques comprobaban el **centro** del núcleo, aunque su dibujo se extiende hasta 6 px; un contacto aparente del borde podía no contar. Se amplían las zonas de colisión; esto es una aproximación conservadora, no una intersección exacta con el rombo: especialmente cerca de esquinas de blancos y fragmentos puede dar falsos positivos. No se ha reproducido la observación del OWNER con renderer, por lo que no se atribuye la incidencia completa a esta causa.
-- El diálogo de resultado se ocultaba tras unos 0,3 s. Ahora permanece durante el estado de resultado (1,4 s); el fallo mantiene dos filas con aviso de dos fijaciones. Se conservan dos filas provisionalmente: no hay pruebas humanas que justifiquen tres.
-- Triple: aviso de cinco fijaciones; cada dos líneas cancela una fila; máximo tres. Se incorpora en ENDLESS (secuencia periódica tras 45 s) y en el primer hito de CORE. Las filas usan la rutina de basura existente, deteniéndose si ocurre top-out.
-- Burst: primer inicio a los 15 s de tiempo de juego, aviso durante los 2 s anteriores, duración 5 s y siguientes inicios cada 20 s. Usa la mitad del intervalo de caída, con piso 0,07 s. El reloj del tablero se congela durante pausa, Glitch y transiciones. `Delta` ya no se reutiliza como factor de velocidad.
-- Estos parámetros son provisionales: no hay comparación controlada de dificultad ni validación de equidad de combinaciones.
+- Los cuatro ataques rectangulares usan intersección del rombo de radio 6 y sus formas rectangulares; el anillo ahora usa distancia euclídea mínima al rombo y radio exterior 31/30 del radio dibujado, incluyendo el trazo del círculo. Los límites exactos usan desigualdad estricta. El antialiasing y trazo del núcleo no están modelados; el aspecto en Scratch y cualquier limitación del escalado de disfraces requieren renderer.
+- El acierto resta 1 HP con invulnerabilidad 0,45 s y sonido. En una traza sin entradas del intérprete los valores fueron 3→2→1→0 y tres llamadas de sonido; el resultado de pérdida indica HP 0 y dos filas en dos fijaciones. El resultado de victoria registra +100 y sonido al entrar en resultado y solo una vez; Core solo se marca completo en victoria. El modal describe el bonus; la actualización gráfica del SCORE se ve al volver al tablero. No se ha reproducido la observación del OWNER visualmente y no se afirma causa raíz completa.
+- La presión de ENDLESS empieza tras 12 s y cinco fijaciones elegibles (antes 20 s y seis); el primer Burst empieza tras 12 s (antes 15). La velocidad base de NIGHTMARE se reduce de 0,23 a 0,18 s; CHAOS permanece en 0,23 s. Se probó también 0,23 bajo el mismo calendario y las mismas semillas. Son parámetros candidatos; la comparación inferior no acredita que NIGHTMARE sea más difícil para humanos. CHAOS no fue modificado.
+- Se conservan dos filas tras el fallo de Glitch. La evidencia comparativa no justifica con confianza tres ni permite evaluar justicia humana. Son no cancelables, dos fijaciones de aviso; el riesgo sigue abierto.
+- Se incorporó build QA independiente y una [guía concreta](NIGHTMARE_R9_QUICK_QA.md); 5 Glitch, 6 Triple, 7 Burst solo en la build QA. La prueba de aislamiento inspecciona el proyecto normal y la build QA; el proyecto normal no incorpora esos atajos.
 
-## Comprobaciones
+## Matriz de evidencia
 
-| Escenario | Estado | Alcance |
+| Requisito | Resultado | Alcance y límites |
 |---|---|---|
-| ZIP, activos y 3202 bloques; regresiones Python | PASS | `python tools/validate_sb3.py`, intérprete y estructura. |
-| 10 pruebas adicionales Python | PASS | `python -m unittest discover -s tools/nightmare -p 'test_*.py'`; `test_glitch_routes.py` aún describe la geometría anterior y no valida los límites nuevos. |
-| Triple sin cancelación y 1/2/3 filas canceladas | PASS | Intérprete; conteo de celdas y huecos; cancelación completa usa fixture sintético. |
-| Triple, Burst y daño Glitch | PASS | `node tools/nightmare/test_r9_runtime.cjs`: planificador oficial y eventos de teclado con fixtures de estado; **sin renderer ni audio**. |
-| Regresiones NORMAL/HARD/CHAOS y controles | PASS | `npm test`, planificador oficial sin renderer, sobre el build anterior a la extensión del resultado de 0,65 a 1,4 s. |
-| Build reproducible | PASS | Dos builds consecutivos del build final: SHA-256 idéntico. |
-| Trials tablero persistente | PARCIAL | `simulate_trials.py --limit 50`: semillas 11/23/37; política básica pierde en oleada 1, heurística alcanza oleada 3 en 50 fijaciones. No llega a Triple/Core ni prueba balance humano. |
-| Geometría exacta, bordes seguros, cinco ataques | NO CERRADO | Zonas ampliadas aproximadas; falta prueba gráfica y ajuste de esquinas/rutas. |
-| Penalización material tras fallo, top-out Triple, cadenas, interacciones y reintentos | PARCIAL | Cobertura previa de Double y fixtures del intérprete; no hay prueba integral R9 con renderer. |
-| Chaos vs Nightmare: mismas semillas, políticas y métricas | NOT RUN | No se demuestra la jerarquía de dificultad. |
-| Ejecución interactiva Scratch 3 con renderer, audio y iPad | RUNTIME_VISUAL_QA_BLOCKED | Este entorno no tiene navegador gráfico instalado; no se produjo screenshot/video ni prueba humana. |
+| Geometría de los cinco ataques | PARCIAL | Cuadrícula de rectángulos y anillo contra oráculos independientes sobre bloques generados, CHARGE, esquinas y ejemplos de zonas seguras; sin comparación con píxeles ni revisión humana. |
+| Daño, resultado, penalización y recompensa | PARCIAL | Intérprete: 3→2→1→0, tres sonidos solicitados, dos filas exactamente una vez, victoria +100 inmediata una vez, pausa/reintento; no se escucha ni observa en renderer. |
+| Triple | PARCIAL | 0–3 filas, cancelación parcial y total acumulada, top-out, pausa y calendario observado en comparación ENDLESS y simulación Trials; no se han agotado todas las combinaciones adversariales ni revisado avisos en pantalla. |
+| Burst | PARCIAL | VM oficial comprueba aceleración, pausa y recuperación con fixture; comparación avanza reloj y observa eventos naturales. El intérprete comprueba reloj congelado en Glitch y pausa; no hay medición visual de caída ni prueba exhaustiva de todas las interacciones. |
+| Trials y Core | PARCIAL | Simulación persistente completa desde oleada 1: semillas 23 y 37 terminan Core; 11 llega a Core y pierde. Entradas idealizadas, no ejecución humana; fixtures cubren fallo/reintento Core y tablero conservado. Véase `docs/evidence/trials-r9.jsonl`. |
+| Balance | NO DEMOSTRADO | Comparación emparejada de seis semillas y dos políticas: mayor presión y menos supervivencia básica, pero mayor tiempo medio de la política heurística. No puede declararse superior; consultar cifras abajo. |
+| QA rápido | PASS parcial | Build y teclas verificadas por VM oficial y aislamiento comprobado; aún no se han probado en renderer. |
+| Estructura, lógica y build | PASS | `validate_sb3.py`, pruebas Python, y doble build idéntico. Las pruebas no prueban apariencia ni audio. |
+| Scratch renderer, controles, sonido, iPad | RUNTIME_VISUAL_QA_BLOCKED | Editor oficial informó falta de WebGL; no hay captura o vídeo de gameplay. |
 
-## Prueba manual provisional
+## Comparación reproducible
 
-1. Abrir el `.sb3` de esta rama en Scratch 3, seleccionar 4 y ENDLESS, iniciar con Enter. Jugar hasta Glitch; moverse deliberadamente a los ataques activos y comprobar HP, sonido, resultado y aplicación posterior de basura. Repetir sobreviviendo y comprobar +100 una sola vez.
-2. Observar `BURST SOON` y `SPEED BURST`, pausar durante la ráfaga y comprobar que se reanuda y termina. En ENDLESS, seguir hasta `TRIPLE GARBAGE`; observar cuenta de fijaciones, filas y cancelación mediante líneas.
-3. En TRIALS, avanzar hasta CORE y repetir. Registrar vídeo, sistema, dispositivo y cualquier impacto falso o invisible.
+`python tools/nightmare/compare_modes.py --limit 100 --cadence 1.0` ejecuta los bloques Scratch con tablero persistente, mismas semillas 11/23/37/41/53/67, tablero inicial vacío, dos políticas y 1 s por decisión. Cada bloque aleatorio tiene su propio generador con semilla reproducible: los eventos no alteran la secuencia de bolsas; CHAOS puede sustituir piezas como parte de su mecánica. Es una adaptación del generador aleatorio, no ejecución del planificador oficial. Se cuentan fijaciones automáticas y manuales por separado. El bot hard-drop no refleja reacción ni percepción humana; el tiempo Glitch queda excluido del reloj del tablero y el límite de 100 caídas manuales censura partidas. Datos por partida en `docs/evidence/balance-r9-final.jsonl`.
 
-No existe todavía un harness gráfico desmontable para acelerar estos casos: la guía puede requerir una espera larga. No marcar DONE ni READY FOR OWNER QA hasta cerrar las verificaciones de R9 y la revisión visual/humana.
+| Política | Modo | Fijaciones medias | Segundos medios | Líneas medias | Filas basura medias | Segundos Burst medios | Top-out / 6 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Básica | CHAOS | 21,3 | 20,1 | 0 | 0 | 0 | 6 |
+| Básica | NIGHTMARE | 17,8 | 15,7 | 0 | 1,2 | 3,2 | 6 |
+| Heurística | CHAOS | 78,7 | 77,9 | 26,0 | 2,8 | 16,2 | 3 |
+| Heurística | NIGHTMARE | 83,2 | 81,7 | 27,2 | 6,2 | 19,8 | 5 |
 
-## Continuación: límites rectangulares (29 octubre)
+Los datos anteriores `balance-r9-before.jsonl` y `balance-r9-after.jsonl` son exploratorios con un generador aleatorio compartido y cuentan caídas manuales bajo el nombre `locks`; no compararlos directamente con la tabla corregida. La prueba final da indicios de más presión, pero los resultados de supervivencia son mixtos y no establecen que NIGHTMARE sea más difícil para humanos. Se requieren más políticas, semillas y pruebas humanas.
 
-Estado: **NO READY FOR OWNER QA / RUNTIME_VISUAL_QA_BLOCKED**. Se comprobó el PR #2 Draft en `e2e2250da01551469803207f1860e7f1137bd5fc` antes de este cambio.
+## Verificación y archivos
 
-En haz, objetivo, muro y fragmentos, la colisión usa intersección entre el rombo interior de radio 6 del núcleo y los rectángulos visibles de cada ataque. La comprobación de suma de distancias elimina las esquinas cuadradas de la ampliación anterior. El muro considera sus dos segmentos y el hueco; los fragmentos usan 14 px de semiextensión. Se emplean desigualdades estrictas, por lo que un contacto matemático exacto en el borde no cuenta. El borde del trazo del núcleo y el antialiasing no están modelados; el anillo conserva su aproximación circular anterior y no se ha validado gráficamente. Esto no demuestra la causa completa del problema observado por el OWNER ni su resolución visual.
+- Doble build release SHA-256 `871b0b7a16da4bbd0c394b75fb2204bc415ed5b329406cca2b4c75cc2f34c7c1`; build QA SHA-256 `5cd03e1a4de5aa11cc17066cb8621a03dabc091f2419e51e12db86b1bfc46d76`.
+- `python tools/validate_sb3.py`: PASS; `python -m unittest discover -s tools/nightmare -p 'test_*.py'`: 25 PASS; `python tools/nightmare/simulate_pressure.py`: PASS en fixture de tablero vacío.
+- `npm test`: PASS, y `python tools/test_sb3.py`: PASS. `node tools/nightmare/test_r9_runtime.cjs`: PASS y `node tools/nightmare/test_qa_fixture.cjs`: PASS, ambos VM oficial sin renderer/audio. Ver instrucciones de reproducción y límites arriba.
+- Pendiente: pruebas de renderer y gameplay real, causa original observada, revisión visual de anillo/trazos, cobertura exhaustiva de combinaciones de amenazas y balance suficiente. Este documento no declara DONE ni READY FOR OWNER QA.
 
-- `test_r9_geometry.py`: seis pruebas de los bloques generados que comprueban CHARGE, límites y esquinas, incluido un punto exterior seguro del anillo. No constituyen una prueba exhaustiva de la circunferencia ni del renderer.
-- Se actualizó `test_glitch_routes.py`, antes basado en la geometría obsoleta. Sus rutas son una simulación idealizada de movimientos por cuadrícula y no demuestran que un jugador humano pueda evitar todos los ataques.
-- `validate_sb3.py`: PASS, 3276 bloques y pruebas lógicas; 16 pruebas Python: PASS. Build duplicado SHA-256 `894d8a9ab1e1d4428f88eb8710eb71a0da294a07ce4691e2ef56aed642a6611f`.
-- `test_r9_runtime.cjs`: PASS para tres filas, Burst, pausa, daño/invulnerabilidad y programación de fallo; VM oficial sin renderer/audio, con estado preparado.
-- Trials con semillas 11/23/37 y límite de 50 fijaciones: política básica termina en GAMEOVER en oleada 1 (18/15/15 fijaciones); heurística sigue jugando en oleada 3 (17/19/15 líneas). No alcanza Core ni valida balance humano.
-- Se intentó abrir el editor oficial `https://scratch.mit.edu/projects/editor/` en Chrome del entorno: el propio editor mostró **Your Browser Does Not Support WebGL**. En el ejecutor no se encontró Chromium, Firefox ni Xvfb instalados. Sin renderer no se comprobaron entrada jugable, audio, capturas ni iPad.
+### Ensayo aislado de velocidad
 
-Pendiente sin cambios: reproducción visual del bug original, anillo y límites completos, castigo y victoria visibles en partida, colisiones entre ticks, interacciones completas de Triple/Burst, Trials y Core integrales, harness rápido, comparación controlada CHAOS/NIGHTMARE y selección fundamentada de dos o tres filas. La penalización continúa provisional en dos; no se ha demostrado NIGHTMARE > CHAOS. Conservar guía manual provisional anterior y PR Draft; no presentar esta continuación como cierre R9.
-- `npm test`: PASS, regresiones del planificador oficial y controles simulados, sin renderer ni audio.
+Con el mismo generador por bloque y calendario, se comparó un build idéntico salvo velocidad base NIGHTMARE 0,23 s frente al candidato 0,18 s (`balance-r9-speed023.jsonl` y `balance-r9-final.jsonl`). Para 0,23, la política básica promedió 17,3 fijaciones y 16,1 s; para 0,18, 17,8 y 15,7 s. La heurística dio 83,2 fijaciones y 81,7 s en ambos casos, con 5 top-outs de 6. CHAOS produjo los mismos resultados en ambos ensayos. La reducción se conserva como candidato de presión inicial, **no** como prueba de mejora de dificultad; la diferencia observada es pequeña/mixta y aún debe evaluarse visual y humanamente. No se subió la penalización de Glitch basándose en estos resultados.

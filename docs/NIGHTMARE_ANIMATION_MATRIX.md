@@ -18,3 +18,7 @@ Una fila «implementada» indica código conectado, no calidad visual verificada
 | Game Over Nightmare / derrota Core | Implementada: paneles diferentes con entrada vertical | 0,8 | No hay pausa en Game Over | Estático | Temporizador y reset en intérprete; render pendiente |
 | Victoria Trials / Core | Implementada: panel con entrada horizontal | 0,8 | No hay pausa en victoria | Estático | Victoria y reloj en intérprete; render pendiente |
 | Regreso al menú y selección | Implementada: menú se desplaza y escala tras seleccionar modo desde Nightmare; reinicio usa entrada Nightmare | 0,6 / 0,8 | Menú no pausado; intro sí | Sin desplazamiento/escala | Selección y reinicio en planificador |
+
+## Revisión R9 posterior a `a533aff`
+
+La victoria de Glitch ahora asigna el bonus y solicita el sonido al entrar en resultado; la pérdida indica HP 0 en el modal. En el intérprete se verifican los eventos de sonido, el cambio de estado y la asignación única. **No se ha observado la animación, el sonido ni el HUD con renderer**; las filas visuales de esta matriz siguen pendientes de QA real. El acceso rápido está documentado en `NIGHTMARE_R9_QUICK_QA.md` y solo existe en una build separada de desarrollo.
