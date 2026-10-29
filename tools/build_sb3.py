@@ -85,6 +85,11 @@ def build_sound_assets() -> Dict[str, Dict[str, Any]]:
         ],
         "Sonido_Hold": [(440.0, 0.045, "sine"), (587.33, 0.055, "sine")],
         "Sonido_Caos": [(392.0, 0.07, "square"), (311.13, 0.07, "square"), (587.33, 0.11, "square")],
+        "Sonido_NMWarning": [(196.0,0.07,"square"),(0,0.025,"sine"),(293.66,0.10,"triangle")],
+        "Sonido_Armor": [(640.0,0.035,"square"),(320.0,0.085,"sweep_down")],
+        "Sonido_GlitchFire": [(720.0,0.07,"sweep_down")],
+        "Sonido_GlitchHit": [(180.0,0.10,"square"),(110.0,0.09,"sweep_down")],
+        "Sonido_GlitchWin": [(440.0,0.07,"triangle"),(659.25,0.07,"triangle"),(880.0,0.13,"sine")],
         "Sonido_GameOver": [
             (440.0, 0.12, "triangle"),
             (392.0, 0.12, "triangle"),
@@ -128,12 +133,32 @@ def register_svg_asset(name: str, svg_text: str, rot_x: float, rot_y: float) -> 
     }
 
 
+def make_creator_signature_svg(nightmare=False):
+    # Keep the original credits intact in Normal, Hard and Chaos.
+    signature = '''<text x="42" y="308" text-anchor="start" fill="#70829D" font-family="sans-serif" font-size="9">楽しんでください</text><path d="M114 300c2-2 3-5 4-8l1-4c.4-1.5 2.4-1.2 2.4.4v6.4h4.2c1.7 0 2.5 1.3 2.1 2.8l-1.5 7.1c-.3 1.3-1.2 2-2.5 2h-5.1c-1.5 0-2.7-.7-3.6-1.8l-2-2.4 2-4.5z" fill="#70829D"/><path d="M110 302h2v7h-2z" fill="#70829D"/><text x="80" y="326" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">by バスケス・ライアン</text>'''
+    if not nightmare:
+        return signature
+    # Twemoji 14.0.2 U+1F44D (CC BY 4.0), embedded as vector paths so Scratch
+    # does not depend on emoji fonts or external image loading. See attribution.
+    emoji_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "emoji", "twemoji-1f44d.svg")
+    with open(emoji_path, encoding="utf-8") as source:
+        emoji_svg = source.read().strip()
+    emoji_paths = emoji_svg.partition(">")[2].rsplit("</svg>", 1)[0]
+    start, end = signature.index("<path"), signature.index('<text x="80"')
+    thumb = (f'<g id="creator-thumb-emoji" transform="translate(115 294) scale(0.34)">'
+             '<desc>Twemoji 14.0.2, Copyright 2019 Twitter, Inc and contributors; '
+             'CC BY 4.0 https://creativecommons.org/licenses/by/4.0/; '
+             'https://github.com/twitter/twemoji/blob/v14.0.2/assets/svg/1f44d.svg; '
+             'scaled and positioned.</desc>' + emoji_paths + '</g>')
+    return f'<g transform="translate(-10 -98)">{signature[:start]}{thumb}{signature[end:]}</g>'
+
+
 def make_stage_backdrop_svg(border_color="#31435A", subtitle="KEYBOARD ARCADE"):
     grid = ''.join(f'<path d="M{165+c*15} 30V330" stroke="#152033"/>' for c in range(1,10))
     grid += ''.join(f'<path d="M165 {30+r*15}H315" stroke="#152033"/>' for r in range(1,20))
     labels = [(80,60,"HOLD"),(80,160,"SCORE"),(400,60,"NEXT"),(400,160,"LEVEL"),(400,218,"LINES"),(400,276,"MODE")]
     text = ''.join(f'<text x="{x}" y="{y}" text-anchor="middle" fill="#8B9CB5" font-family="sans-serif" font-size="10" letter-spacing="2">{t}</text>' for x,y,t in labels)
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#090F1B"/><rect x="163" y="28" width="154" height="304" rx="2" fill="#070B13" stroke="{border_color}"/>{grid}{text}<text x="240" y="18" text-anchor="middle" fill="#DDE7F5" font-family="sans-serif" font-size="11" letter-spacing="3">NEXUS BLOCKS</text><text x="240" y="350" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">ARROWS MOVE / ROTATE · SPACE DROP · C HOLD · P PAUSE · R RESTART</text></svg>'''
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#090F1B"/><rect x="163" y="28" width="154" height="304" rx="2" fill="#070B13" stroke="{border_color}"/>{grid}{text}<text x="240" y="18" text-anchor="middle" fill="#DDE7F5" font-family="sans-serif" font-size="11" letter-spacing="3">NEXUS BLOCKS</text>{make_creator_signature_svg()}<text x="240" y="350" text-anchor="middle" fill="#70829D" font-family="sans-serif" font-size="9">ARROWS MOVE / ROTATE · SPACE DROP · C HOLD · P PAUSE · R RESTART</text></svg>'''
 
 
 def make_block_svg(fill_hex: str, highlight_hex: str, border_hex: str, size: int = 15) -> str:
@@ -157,7 +182,7 @@ def make_ghost_block_svg(size: int = 15) -> str:
 def make_modal_svg(title, line1, line2, line3, accent_hex):
     """Panel de estado informativo sin controles táctiles."""
     if title == "NEXUS BLOCKS":
-        lines = [(61,"1 — NORMAL"),(82,"2 — HARD"),(103,"3 — CHAOS"),(140,"PRESS ENTER TO START")]
+        lines = [(55,"1 — NORMAL"),(74,"2 — HARD"),(93,"3 — CHAOS"),(112,"4 — NIGHTMARE / CHANGE TYPE"),(145,"PRESS ENTER TO START")]
     else:
         lines = [(68,line1),(94,line2),(135,line3)]
     texts = ''.join(f'<text x="118" y="{y}" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#CFDBEA">{t}</text>' for y,t in lines)
@@ -171,6 +196,11 @@ def make_line_fx_svg(label: str, color_hex: str) -> str:
   <rect x="2" y="2" width="{w - 4}" height="{h - 4}" rx="8" fill="#071226" fill-opacity="0.92" stroke="{color_hex}" stroke-width="2.5"/>
   <text x="{w / 2.0}" y="22" font-family="sans-serif" font-size="13" font-weight="bold" fill="{color_hex}" text-anchor="middle">{label}</text>
 </svg>"""
+
+
+def make_nightmare_modal(title: str, lines: List[str]) -> str:
+    text = ''.join(f'<text x="14" y="{70 + i*25}" fill="#F5F2E9" font-family="monospace" font-size="12">{line}</text>' for i, line in enumerate(lines))
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="236" height="168"><rect x="1" y="1" width="234" height="166" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M12 41H224 M12 142H224" stroke="#FFBC32"/><text x="14" y="29" fill="#FFBC32" font-family="monospace" font-size="16" font-weight="bold">{title}</text>{text}</svg>'''
 
 
 # ==============================================================================
@@ -740,7 +770,7 @@ def get_tetromino_tables() -> Tuple[List[int], List[int], List[int], List[int]]:
 # 5. CONSTRUCCIÓN COMPLETA DEL PROYECTO SCRATCH 3 (.SB3)
 # ==============================================================================
 
-def build_project(output_sb3_path: str) -> Dict[str, Any]:
+def build_project(output_sb3_path: str, qa_mode: bool = False) -> Dict[str, Any]:
     sound_assets = build_sound_assets()
     offset_x, offset_y, kick_x, kick_y = get_tetromino_tables()
 
@@ -791,11 +821,20 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "puntos_base": ("var_puntos_base", 0),
     }
 
-    for name, value in {"Tiempo_Juego":0, "Ultimo_Tick":0, "Delta":0, "Bloqueo":-1,
+    for name, value in {"Tiempo_Juego":0, "Ultimo_Tick":0, "Delta":0, "Velocidad_Factor":0, "NM_BurstNext":12, "NM_BurstEnd":0, "NM_Burst":0, "Bloqueo":-1,
                         "Evento_Fin":0, "Proximo_Evento":12, "Proximo_Ataque":25,
-                        "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0}.items():
+                        "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0,
+                        "Nightmare_Intro":0, "Pausa_Origen":"JUGANDO",
+                        "NM_Event":"NONE", "NM_Warning":0, "NM_Rows":0,
+                        "NM_Progress":0, "NM_Jam":0, "NM_Cooldown":0, "NM_Sequence":0, "NM_Cancelable":1,
+                        "NM_Chain":0, "NM_EventStart":"NONE", "NM_Top":0, "NM_Scan":1, "NM_Delayed":0,
+                        "Armor_Row":0, "Armor_Hit":0, "Armor_Broken":0, "Armor_CrackedRow":0, "NM_FX":"NONE", "NM_FXTime":0, "NM_OldRows":0, "NM_OldJam":0, "NM_OldDelayed":0, "NM_Submode":"ENDLESS", "Trial_Wave":1,
+                        "Trial_Count":0, "Trial_Event":0, "Trial_Goal":20, "Trial_Timer":0, "Trial_Required":1, "Trial_Lines":0, "Trial_LineGoal":0,
+                        "Trial_GlitchDone":0, "G_Timer":0, "G_Time":0, "G_Phase":0, "G_PrevPhase":-1,
+                        "G_Inner":0, "G_X":0, "G_Y":-45, "G_TargetX":0, "G_TargetY":0,
+                        "G_HP":3, "G_Invuln":0, "G_Hit":0, "G_Pos":0, "G_Next":60, "G_Success":0, "G_Active":0, "G_Radius":0, "G_NearX":0, "G_NearY":0, "G_Offset":0, "G_SoundedPhase":-1, "G_Reveal":0, "G_VisualScale":100, "NM_Reduced":0, "Menu_Timer":0, "NM_ReturnMenu":0, "Resultado_Timer":0}.items():
         var_specs[name] = ("v2_"+name, value)
-    for key in ["left", "right", "down", "up", "space", "c", "p", "r", "1", "2", "3", "enter"]:
+    for key in ["left", "right", "down", "up", "space", "c", "p", "r", "m", "1", "2", "3", "4", "enter"] + (["5", "6", "7"] if qa_mode else []):
         var_specs["key_"+key] = ("v2_key_"+key, 0)
         var_specs["repeat_"+key] = ("v2_repeat_"+key, 0)
     var_map = {k: v[0] for k, v in var_specs.items()}
@@ -839,7 +878,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         240,
         180,
     )
-    for asset in (bg_normal, bg_chaos):
+    bg_nightmare = register_svg_asset("Fondo_Nightmare", '''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#101010"/><rect x="164" y="29" width="152" height="302" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M12 28H148 M332 28H468 M12 332H148 M332 332H468" stroke="#FFBC32"/><g fill="#F5F2E9" font-family="monospace" font-size="11" text-anchor="middle"><text x="80" y="60">HOLD</text><text x="80" y="160">SCORE</text><text x="400" y="60">NEXT</text><text x="400" y="160">LEVEL</text><text x="400" y="218">LINES</text><text x="400" y="276">MODE</text><text x="240" y="18">NEXUS BLOCKS / NIGHTMARE</text><text x="240" y="350">ARROWS MOVE / ROTATE   SPACE DROP   C HOLD   P PAUSE   R RESTART</text></g></svg>'''.replace("</svg>", make_creator_signature_svg(True) + "</svg>"), 240, 180)
+    for asset in (bg_normal, bg_chaos, bg_nightmare):
         all_zip_files[asset["md5ext"]] = asset["bytes"]
 
     stage_b = ScratchBlockBuilder("stg", var_map, list_map, bcast_specs)
@@ -849,7 +889,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             stage_b.stmt_if_else(
                 stage_b.op_eq("$v:Modo_Juego", "CHAOS"),
                 [stage_b.stmt_switch_backdrop("Fondo_Caos")],
-                [stage_b.stmt_switch_backdrop("Fondo_Arcade")],
+                [stage_b.stmt_if_else(stage_b.op_eq("$v:Modo_Juego", "NIGHTMARE"),
+                    [stage_b.stmt_switch_backdrop("Fondo_Nightmare")],
+                    [stage_b.stmt_switch_backdrop("Fondo_Arcade")])],
             )
         ],
         x=50,
@@ -874,6 +916,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "costumes": [
             {k: v for k, v in bg_normal.items() if k != "bytes"},
             {k: v for k, v in bg_chaos.items() if k != "bytes"},
+            {k: v for k, v in bg_nightmare.items() if k != "bytes"},
         ],
         "sounds": [],
         "volume": 100,
@@ -896,6 +939,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         ("Bloque_6_J", make_block_svg("#2979FF", "#99C2FF", "#0043B2")),
         ("Bloque_7_L", make_block_svg("#FF9100", "#FFD099", "#B25900")),
         ("Bloque_8_Flash", make_block_svg("#FFFFFF", "#FFFFCC", "#00F0FF")),
+        ("Bloque_9_Armor", '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><rect x=".5" y=".5" width="14" height="14" fill="#101010" stroke="#FFBC32"/><path d="M3 3H12V12H3Z M5 5H10V10H5Z" fill="none" stroke="#F5F2E9"/></svg>'),
+        ("Bloque_10_Cracked", '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><rect x=".5" y=".5" width="14" height="14" fill="#101010" stroke="#FFBC32"/><path d="M3 3H12V12H3Z M9 2L6 6 9 8 5 13" fill="none" stroke="#F5F2E9" stroke-width="1.3"/></svg>'),
         ("Bloque_Fantasma", make_ghost_block_svg(15)),
     ]
     motor_costumes = []
@@ -905,9 +950,38 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         motor_costumes.append({k: v for k, v in casset.items() if k != "bytes"})
 
     # HUD vectorial: cifras y estados estampados, sin monitores de variables.
-    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING"]:
-        asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{label}</text></svg>',65,12)
+    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","ENDLESS","TRIALS","WAVE","/","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","TRIPLE GARBAGE","BURST SOON","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED","ARMOR INCOMING","SIGNAL BEAM","TARGET MARKER","PULSE RING","SWEEP WALL","DATA FRAGMENTS","CHARGE","ACTIVE","CORE HP","MOTION LOW"]:
+        safe_label = label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{safe_label}</text></svg>',65,12)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
+        motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
+
+    # Short, bounded event confirmations stay in the lower left rail, never
+    # over the playfield or creator signature. Timings use the game clock.
+    for label in ("WARNING", "IMPACT", "JAM LOCK", "JAM FREE", "DEBT PAID", "ARMOR IN", "ARMOR HIT", "ARMOR BREAK", "OBJECTIVE", "OBJECTIVE START", "OBJECTIVE CLEAR", "CHAIN", "PRESSURE"):
+        svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="16"><path d="M2 1H118V15H2Z" fill="#101010" stroke="#FFBC32"/><path d="M6 4V12 M114 4V12" stroke="#FFBC32"/><text x="60" y="11.5" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#F5F2E9">{label}</text></svg>'
+        asset = register_svg_asset("FX_"+label,svg,60,8)
+        all_zip_files[asset["md5ext"]]=asset["bytes"]
+        motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
+
+    glitch_svgs = {
+        "G_ARENA": '<svg xmlns="http://www.w3.org/2000/svg" width="130" height="130"><rect x="2" y="2" width="126" height="126" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M32 3V127 M65 3V127 M98 3V127 M3 32H127 M3 65H127 M3 98H127" stroke="#F5F2E9" stroke-opacity=".18"/></svg>',
+        "G_CORE": '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M7 1L13 7 7 13 1 7Z" fill="#F5F2E9" stroke="#FFBC32"/></svg>',
+        "G_CORE_HIT": '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M7 1L13 7 7 13 1 7Z" fill="#101010" stroke="#FFBC32" stroke-width="2"/></svg>',
+        "G_BEAM_WARN": '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12"><rect x="1" y="1" width="118" height="10" fill="none" stroke="#FFBC32" stroke-dasharray="5 3"/></svg>',
+        "G_BEAM_FIRE": '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12"><rect width="120" height="12" fill="#FFBC32"/><path d="M0 6H120" stroke="#101010"/></svg>',
+        "G_TARGET": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect x="2" y="2" width="26" height="26" fill="none" stroke="#FFBC32" stroke-width="2"/><path d="M15 0V30 M0 15H30" stroke="#F5F2E9"/></svg>',
+        "G_TARGET_FIRE": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="30" height="30" fill="#FFBC32"/><path d="M15 0V30 M0 15H30" stroke="#101010" stroke-width="2"/></svg>',
+        "G_RING": '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><circle cx="36" cy="36" r="30" fill="#FFBC32" fill-opacity=".28" stroke="#FFBC32" stroke-width="2"/></svg>',
+        "G_RING_WARN": '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><circle cx="36" cy="36" r="30" fill="#FFBC32" fill-opacity=".1" stroke="#FFBC32" stroke-width="2" stroke-dasharray="5 4"/></svg>',
+        "G_FRAGMENT": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><path d="M2 2H28V28H2Z M3 3L27 27" fill="none" stroke="#FFBC32" stroke-width="2"/></svg>',
+        "G_WALL": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="120"><path d="M1 0H29V43H1Z M1 77H29V120H1Z" fill="#FFBC32"/><path d="M1 46V74 M29 46V74" stroke="#F5F2E9" stroke-dasharray="3 2"/></svg>',
+        "G_WALL_WARN": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="120"><path d="M1 1H29V43H1Z M1 77H29V119H1Z" fill="none" stroke="#FFBC32" stroke-width="2" stroke-dasharray="5 3"/><path d="M1 46V74 M29 46V74" stroke="#F5F2E9" stroke-dasharray="3 2"/></svg>',
+        "G_FRAGMENT_FIRE": '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect x="1" y="1" width="28" height="28" fill="#FFBC32"/><path d="M3 3L27 27" stroke="#101010" stroke-width="2"/></svg>',
+    }
+    for name, svg in glitch_svgs.items():
+        size = {"G_ARENA":(65,65),"G_BEAM_WARN":(60,6),"G_BEAM_FIRE":(60,6),"G_TARGET":(15,15),"G_TARGET_FIRE":(15,15),"G_RING":(36,36),"G_RING_WARN":(36,36),"G_WALL":(15,60),"G_WALL_WARN":(15,60),"G_FRAGMENT":(15,15),"G_FRAGMENT_FIRE":(15,15)}.get(name,(7,7))
+        asset = register_svg_asset(name,svg,*size); all_zip_files[asset["md5ext"]]=asset["bytes"]
         motor_costumes.append({k:v for k,v in asset.items() if k!="bytes"})
 
     motor_sounds = [
@@ -920,6 +994,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             "Sonido_Hold",
             "Sonido_Caos",
             "Sonido_GameOver",
+            "Sonido_NMWarning", "Sonido_Armor", "Sonido_GlitchFire", "Sonido_GlitchHit", "Sonido_GlitchWin",
         )
     ]
 
@@ -1076,13 +1151,14 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     proc_vel_code = "Actualizar_Velocidad_Y_Caos"
     mb.define_proc(proc_vel_code, [], [], True, [
         mb.stmt_set_var("Velocidad_Base", 0.65),
-        mb.stmt_set_var("Delta", 0.045),
-        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "HARD"), [mb.stmt_set_var("Velocidad_Base",0.30),mb.stmt_set_var("Delta",0.055)]),
-        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "CHAOS"), [mb.stmt_set_var("Velocidad_Base",0.23),mb.stmt_set_var("Delta",0.04)]),
-        mb.stmt_set_var("Velocidad_Caida", mb.op_div("$v:Velocidad_Base",mb.op_add(1,mb.op_mul(mb.op_sub("$v:Nivel",1),"$v:Delta")))),
-        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "CHAOS"), [
+        mb.stmt_set_var("Velocidad_Factor", 0.045),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "HARD"), [mb.stmt_set_var("Velocidad_Base",0.30),mb.stmt_set_var("Velocidad_Factor",0.055)]),
+        mb.stmt_if(mb.op_or(mb.op_eq("$v:Modo_Juego", "CHAOS"),mb.op_eq("$v:Modo_Juego", "NIGHTMARE")), [mb.stmt_set_var("Velocidad_Base",0.23),mb.stmt_set_var("Velocidad_Factor",0.04)]),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "NIGHTMARE"), [mb.stmt_set_var("Velocidad_Base",0.18)]),
+        mb.stmt_set_var("Velocidad_Caida", mb.op_div("$v:Velocidad_Base",mb.op_add(1,mb.op_mul(mb.op_sub("$v:Nivel",1),"$v:Velocidad_Factor")))),
+        mb.stmt_if(mb.op_or(mb.op_eq("$v:Modo_Juego", "CHAOS"),mb.op_eq("$v:Modo_Juego", "NIGHTMARE")), [
             mb.stmt_set_var("Velocidad_Caida",mb.op_div("$v:Velocidad_Caida",mb.op_add(1,mb.op_div("$v:Tiempo_Juego",180)))),
-            mb.stmt_if(mb.op_eq("$v:Evento_Caos","SPEED BURST"),[mb.stmt_set_var("Velocidad_Caida",mb.op_mul("$v:Velocidad_Caida",0.5))])]),
+            mb.stmt_if(mb.op_or(mb.op_eq("$v:Evento_Caos","SPEED BURST"),mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq("$v:NM_Burst",1))),[mb.stmt_set_var("Velocidad_Caida",mb.op_mul("$v:Velocidad_Caida",0.5))])]),
         mb.stmt_if(mb.op_lt("$v:Velocidad_Caida",0.07),[mb.stmt_set_var("Velocidad_Caida",0.07)])])
 
     mb.define_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["n","x","y"],True,[
@@ -1244,6 +1320,67 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Lineas",165,-58],True),
             mb.stmt_switch_costume(mb.op_join("HUD_","$v:Modo_Juego")),mb.stmt_goto_xy(160,-116),mb.stmt_pen_stamp(),
             mb.stmt_if(mb.op_not(mb.op_eq("$v:Evento_Caos","NONE")),[mb.stmt_switch_costume(mb.op_join("HUD_","$v:Evento_Caos")),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
+            mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+                # Compact Nightmare HUD: fixed sizes keep labels and numbers inside
+                # their columns even when the game is displayed on a 480x360 stage.
+                mb.stmt_set_size(70),
+                mb.stmt_if(mb.op_and(mb.op_and(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_gt("$v:Menu_Timer",0)),mb.op_eq("$v:NM_Reduced",0)),[mb.stmt_set_size(mb.op_add(70,mb.op_mul("$v:Menu_Timer",15)))]),
+                mb.stmt_switch_costume(mb.op_join("HUD_","$v:NM_Submode")),mb.stmt_goto_xy(160,-130),mb.stmt_pen_stamp(),mb.stmt_set_size(70),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_not(mb.op_eq("$v:Estado_Juego","MENU"))),[
+                    mb.stmt_if(mb.op_gt("$v:Trial_LineGoal",0),[
+                        mb.stmt_switch_costume("HUD_LINES"),mb.stmt_goto_xy(115,-80),mb.stmt_pen_stamp(),
+                        mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Lines",151,-80],True),
+                        mb.stmt_switch_costume("HUD_/"),mb.stmt_goto_xy(163,-80),mb.stmt_pen_stamp(),
+                        mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_LineGoal",181,-80],True)]),
+                    mb.stmt_switch_costume("HUD_WAVE"),mb.stmt_goto_xy(112,-146),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Wave",138,-146],True),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Count",176,-146],True),
+                    mb.stmt_switch_costume("HUD_/"),mb.stmt_goto_xy(188,-146),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Goal",216,-146],True)]),
+                mb.stmt_if(mb.op_or(mb.op_eq("$v:NM_Event","DOUBLE"),mb.op_eq("$v:NM_Event","TRIPLE")),[
+                    mb.stmt_if_else(mb.op_eq("$v:NM_Event","TRIPLE"),[mb.stmt_switch_costume("HUD_TRIPLE GARBAGE")],[mb.stmt_switch_costume("HUD_DOUBLE GARBAGE")]),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_switch_costume("HUD_ROWS"),mb.stmt_goto_xy(-194,-87),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Rows",-168,-87],True),
+                    mb.stmt_switch_costume("HUD_IN"),mb.stmt_goto_xy(-142,-87),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-120,-87],True),
+                    mb.stmt_if(mb.op_eq("$v:NM_Cancelable",1),[
+                        mb.stmt_switch_costume("HUD_LINES"),mb.stmt_goto_xy(-180,-108),mb.stmt_pen_stamp(),
+                        mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Progress",-140,-108],True)])]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","JAM_WARNING"),[
+                    mb.stmt_switch_costume("HUD_HOLD JAM SOON"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","CHAIN_JAM"),[
+                    mb.stmt_switch_costume("HUD_HOLD JAM SOON"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","CHAIN_DEBT"),[
+                    mb.stmt_switch_costume("HUD_DEBT SOON"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","ARMOR_WARNING"),[
+                    mb.stmt_switch_costume("HUD_ARMOR INCOMING"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-160,-87],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Event","DEBT"),[
+                    mb.stmt_switch_costume("HUD_GARBAGE DEBT"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                    mb.stmt_switch_costume("HUD_ROWS"),mb.stmt_goto_xy(-194,-87),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Rows",-168,-87],True),
+                    mb.stmt_switch_costume("HUD_IN"),mb.stmt_goto_xy(-142,-87),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-120,-87],True),
+                    mb.stmt_switch_costume("HUD_LINES"),mb.stmt_goto_xy(-180,-108),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Progress",-140,-108],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Burst",1),[mb.stmt_switch_costume("HUD_SPEED BURST"),mb.stmt_goto_xy(160,-105),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Burst",0),mb.op_gt("$v:Tiempo_Juego",mb.op_sub("$v:NM_BurstNext",2))),[mb.stmt_switch_costume("HUD_BURST SOON"),mb.stmt_goto_xy(160,-105),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_gt("$v:NM_Jam",0),[
+                    mb.stmt_switch_costume("HUD_HOLD JAM"),mb.stmt_goto_xy(-178,40),mb.stmt_pen_stamp(),
+                    mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Jam",-127,40],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Chain",1),[mb.stmt_switch_costume("HUD_CHAIN: DOUBLE > JAM"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_eq("$v:NM_Chain",2),[mb.stmt_switch_costume("HUD_CHAIN: JAM > DEBT"),mb.stmt_goto_xy(-160,-145),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_eq("$v:NM_Delayed",1),[mb.stmt_switch_costume("HUD_PRESSURE DELAYED"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_FXTime",0),mb.op_eq("$v:NM_Reduced",0)),[
+                    mb.stmt_set_size(mb.op_add(74,mb.op_mul("$v:NM_FXTime",10))),
+                    mb.stmt_switch_costume(mb.op_join("FX_","$v:NM_FX")),
+                    mb.stmt_goto_xy(-160,mb.op_add(-127,mb.op_mul("$v:NM_FXTime",4))),mb.stmt_pen_stamp(),mb.stmt_set_size(70)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Reduced",1),mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_and(mb.op_eq("$v:NM_Jam",0),mb.op_eq("$v:NM_Delayed",0)))),
+                    [mb.stmt_switch_costume("HUD_MOTION LOW"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp()]),
+                mb.stmt_set_size(100)]),
             mb.stmt_hide(),
         ],
         x=560,
@@ -1300,11 +1437,15 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         True,
         [
             mb.stmt_set_var("Lineas_Turno", 0),
+            mb.stmt_set_var("Armor_Hit", 0),
+            mb.stmt_set_var("Armor_Broken", 0),
             mb.stmt_set_var("f", 20),
             mb.stmt_repeat_until(
                 mb.op_lt("$v:f", 1),
                 [
                     mb.stmt_set_var("fila_completa", 1),
+                    mb.stmt_set_var("Armor_Row", 0),
+                    mb.stmt_set_var("Armor_CrackedRow", 0),
                     mb.stmt_set_var("c", 1),
                     mb.stmt_repeat(
                         10,
@@ -1317,12 +1458,24 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                                 mb.op_eq(mb.expr_list_item("Tablero", "$v:idx"), 0),
                                 [mb.stmt_set_var("fila_completa", 0)],
                             ),
+                            mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq(mb.expr_list_item("Tablero","$v:idx"),9)),[mb.stmt_set_var("Armor_Row",1)]),
+                            mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq(mb.expr_list_item("Tablero","$v:idx"),10)),[mb.stmt_set_var("Armor_CrackedRow",1)]),
                             mb.stmt_change_var("c", 1),
                         ],
                     ),
+                    # Una fila completa intacta se agrieta una sola vez por revisión.
+                    # Su resolución automática ocurre al fijar la próxima pieza.
+                    mb.stmt_if(mb.op_and(mb.op_eq("$v:fila_completa",1),mb.op_eq("$v:Armor_Row",1)),[
+                        mb.stmt_set_var("c",1),
+                        mb.stmt_repeat(10,[
+                            mb.stmt_set_var("idx",mb.op_add(mb.op_mul(mb.op_sub("$v:f",1),10),"$v:c")),
+                            mb.stmt_if(mb.op_eq(mb.expr_list_item("Tablero","$v:idx"),9),[mb.stmt_replace_item_list("Tablero","$v:idx",10)]),
+                            mb.stmt_change_var("c",1)]),
+                        mb.stmt_change_var("Armor_Hit",1),mb.stmt_set_var("fila_completa",0)]),
                     mb.stmt_if_else(
                         mb.op_eq("$v:fila_completa", 1),
                         [
+                            mb.stmt_if(mb.op_eq("$v:Armor_CrackedRow",1),[mb.stmt_change_var("Armor_Broken",1)]),
                             mb.stmt_change_var("Lineas_Turno", 1),
                             mb.stmt_set_var("f_origen", "$v:f"),
                             mb.stmt_repeat_until(
@@ -1371,6 +1524,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     ),
                 ],
             ),
+            mb.stmt_if(mb.op_gt("$v:Armor_Hit",0),[mb.stmt_play_sound("Sonido_Armor")]),
             mb.stmt_if_else(
                 mb.op_gt("$v:Lineas_Turno", 0),
                 [
@@ -1469,6 +1623,15 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.op_eq("$v:Estado_Juego", "JUGANDO"),
                 [mb.stmt_call_proc(proc_spawn_code, [], [], True)],
             ),
+            mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq("$v:Estado_Juego","JUGANDO")),
+                [mb.stmt_set_var("NM_OldRows","$v:NM_Rows"),mb.stmt_set_var("NM_OldJam","$v:NM_Jam"),mb.stmt_set_var("NM_OldDelayed","$v:NM_Delayed"),
+                 mb.stmt_call_proc("Nightmare_OnLock", [], [], True),
+                 mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_call_proc("Trial_OnLock", [], [], True)]),
+                 mb.stmt_call_proc("Nightmare_VisualCue", [], [], True),
+                 mb.stmt_if(mb.op_and(mb.op_and(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0))),
+                    mb.op_or(mb.op_and(mb.op_eq("$v:NM_Submode","ENDLESS"),mb.op_gt("$v:Tiempo_Juego","$v:G_Next")),
+                        mb.op_and(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Trial_Wave",5)),mb.op_and(mb.op_gt("$v:Trial_Count",35),mb.op_eq("$v:Trial_GlitchDone",0))))),
+                    [mb.stmt_call_proc("Glitch_Begin",[],[],True)])]),
             mb.stmt_call_proc(proc_render_code, [], [], True),
         ],
         x=1100,
@@ -1656,7 +1819,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_if(
                 mb.op_and(
                     mb.op_eq("$v:Estado_Juego", "JUGANDO"),
-                    mb.op_eq("$v:Puede_Guardar", 1),
+                    mb.op_and(mb.op_eq("$v:Puede_Guardar", 1),mb.op_or(mb.op_not(mb.op_eq("$v:Modo_Juego","NIGHTMARE")),mb.op_eq("$v:NM_Jam",0))),
                 ),
                 [
                     mb.stmt_play_sound("Sonido_Hold"),
@@ -1716,6 +1879,15 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Proximo_Ataque", 25),
             mb.stmt_set_var("Evento_Fin", 0),
             mb.stmt_set_var("Eventos", 0),
+            mb.stmt_set_var("Nightmare_Intro", 0),
+            mb.stmt_set_var("Pausa_Origen", "JUGANDO"),
+            mb.stmt_set_var("NM_Event", "NONE"),mb.stmt_set_var("NM_Warning", 0),
+            mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Progress",0),
+            mb.stmt_set_var("NM_BurstNext",12),mb.stmt_set_var("NM_BurstEnd",0),mb.stmt_set_var("NM_Burst",0),mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("NM_FX","NONE"),mb.stmt_set_var("NM_FXTime",0),mb.stmt_set_var("Armor_Hit",0),mb.stmt_set_var("Armor_Broken",0),mb.stmt_set_var("Menu_Timer",0),mb.stmt_set_var("Resultado_Timer",0),
+            mb.stmt_set_var("Trial_Wave",1),mb.stmt_set_var("Trial_Count",0),mb.stmt_set_var("Trial_Event",0),mb.stmt_set_var("Trial_Goal",20),mb.stmt_set_var("Trial_Timer",0),mb.stmt_set_var("Trial_Required",1),mb.stmt_set_var("Trial_Lines",0),mb.stmt_set_var("Trial_LineGoal",0),mb.stmt_set_var("Trial_GlitchDone",0),mb.stmt_set_var("G_Next",60),
+            mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_Inner",0),
+            mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-45),mb.stmt_set_var("G_TargetX",0),mb.stmt_set_var("G_TargetY",0),mb.stmt_set_var("G_HP",3),
+            mb.stmt_set_var("G_Invuln",0),mb.stmt_set_var("G_Hit",0),mb.stmt_set_var("G_Pos",0),mb.stmt_set_var("G_Success",0),mb.stmt_set_var("G_Active",0),mb.stmt_set_var("G_Radius",0),mb.stmt_set_var("G_SoundedPhase",-1),
             mb.stmt_set_var("Bloqueo", -1),
             mb.stmt_call_proc(proc_vel_code, [], [], True),
             mb.stmt_call_proc(proc_extraer_code, [], [], True),
@@ -1747,33 +1919,316 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             call(proc_col_code,proc_col_args,["$v:Pieza_Actual","$v:Pieza_Col","$v:Pieza_Fila","$v:Pieza_Rotacion"]) ]),
         mb.stmt_if(mb.op_eq("$v:Colision_Detectada",1),[mb.stmt_set_var("Estado_Juego","GAMEOVER")]),
         mb.stmt_set_var("Bloqueo",-1),call(proc_ghost_code),mb.stmt_broadcast("Actualizar_UI")])
+    mb.define_proc("Nightmare_ArmorAttack",[],[],True,[
+        call("Garbage_Attack"),
+        mb.stmt_set_var("NM_FX","ARMOR IN"),mb.stmt_set_var("NM_FXTime",0.8),
+        mb.stmt_set_var("NM_Scan",191),
+        mb.stmt_repeat(10,[
+            mb.stmt_if(mb.op_eq(mb.expr_list_item("Tablero","$v:NM_Scan"),8),[
+                mb.stmt_replace_item_list("Tablero","$v:NM_Scan",9)]),
+            mb.stmt_change_var("NM_Scan",1)])])
+    # Glitch Protocol: todos los peligros son secuenciales; el reloj del
+    # tablero permanece congelado mientras se actualiza este estado.
+    abs_g = lambda value: mb.op_math("abs",value)
+    g_dist = lambda x,y: mb.op_add(mb.op_mul(x,x),mb.op_mul(y,y))
+    # Intersección de rombo |dx|+|dy|<6 y rectángulo: las dos
+    # proyecciones y la suma evitan los falsos impactos en las esquinas.
+    def g_rect(dx, dy, half_x, half_y):
+        return mb.op_and(mb.op_and(mb.op_lt(abs_g(dx()),half_x+6),mb.op_lt(abs_g(dy()),half_y+6)),
+                         mb.op_lt(mb.op_add(abs_g(dx()),abs_g(dy())),half_x+half_y+6))
+    g_stamp = lambda name,x,y: [mb.stmt_switch_costume(name),mb.stmt_goto_xy(x,y),mb.stmt_pen_stamp()]
+    mb.define_proc("Glitch_Render",[],[],True,[
+        mb.stmt_pen_clear(),mb.stmt_show(),mb.stmt_set_size(100),*g_stamp("G_ARENA",0,0),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",0),[
+            mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_BEAM_WARN",0,0),g_stamp("G_BEAM_FIRE",0,0))]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",1),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_TARGET","$v:G_TargetX","$v:G_TargetY"),g_stamp("G_TARGET_FIRE","$v:G_TargetX","$v:G_TargetY"))]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",2),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_RING_WARN",0,0),
+            [mb.stmt_switch_costume("G_RING"),mb.stmt_set_size(mb.op_mul(mb.op_div("$v:G_Radius",30),100)),mb.stmt_goto_xy(0,0),mb.stmt_pen_stamp(),mb.stmt_set_size(100)])]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",3),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_WALL_WARN","$v:G_Pos",0),g_stamp("G_WALL","$v:G_Pos",0))]),
+        mb.stmt_if(mb.op_eq("$v:G_Phase",4),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),
+            g_stamp("G_FRAGMENT","$v:G_Pos",25)+g_stamp("G_FRAGMENT",mb.op_sub(0,"$v:G_Pos"),-25),
+            g_stamp("G_FRAGMENT_FIRE","$v:G_Pos",25)+g_stamp("G_FRAGMENT_FIRE",mb.op_sub(0,"$v:G_Pos"),-25))]),
+        mb.stmt_if_else(mb.op_gt("$v:G_Invuln",0),g_stamp("G_CORE_HIT","$v:G_X","$v:G_Y"),g_stamp("G_CORE","$v:G_X","$v:G_Y")),
+        *g_stamp("HUD_CORE HP",-160,0),
+        mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:G_HP",-160,-25],True),
+        *[mb.stmt_if(mb.op_eq("$v:G_Phase",i),g_stamp("HUD_"+name,160,0)) for i,name in enumerate(["SIGNAL BEAM","TARGET MARKER","PULSE RING","SWEEP WALL","DATA FRAGMENTS"])],
+        mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("HUD_CHARGE",160,-25),g_stamp("HUD_ACTIVE",160,-25)),
+        mb.stmt_hide()])
+    mb.define_proc("Glitch_Transition",[],[],True,[
+        mb.stmt_pen_clear(),mb.stmt_show(),mb.stmt_set_var("G_VisualScale",100),
+        mb.stmt_if(mb.op_eq("$v:NM_Reduced",0),[
+            mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),
+                [mb.stmt_set_var("G_VisualScale",mb.op_add(50,mb.op_mul("$v:G_Timer",62.5)))],
+                [mb.stmt_set_var("G_VisualScale",mb.op_sub(100,mb.op_mul("$v:G_Timer",60)))])]),
+        mb.stmt_set_size("$v:G_VisualScale"),*g_stamp("G_ARENA",0,0),
+        *g_stamp("G_CORE",mb.op_mul("$v:G_X",mb.op_div("$v:G_VisualScale",100)),mb.op_mul("$v:G_Y",mb.op_div("$v:G_VisualScale",100))),
+        mb.stmt_set_size(100),mb.stmt_hide()])
+    mb.define_proc("Glitch_Begin",[],[],True,[
+        mb.stmt_set_var("Estado_Juego","GLITCH_INTRO"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),
+        mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-35),
+        mb.stmt_set_var("G_HP",3),mb.stmt_set_var("G_Invuln",0),mb.stmt_set_var("G_Active",0),mb.stmt_set_var("G_Reveal",0),mb.stmt_set_var("G_SoundedPhase",-1),mb.stmt_set_var("G_Next",mb.op_add("$v:Tiempo_Juego",45)),
+        mb.stmt_play_sound("Sonido_NMWarning"),mb.stmt_broadcast("Actualizar_UI")])
+    mb.define_proc("Glitch_Advance",[],[],True,[
+        mb.stmt_change_var("G_Time","$v:Delta"),
+        mb.stmt_if(mb.op_gt("$v:G_Invuln",0),[mb.stmt_change_var("G_Invuln",mb.op_sub(0,"$v:Delta"))]),
+        mb.stmt_if_else(mb.op_lt("$v:G_Time",5),[
+            mb.stmt_set_var("G_Phase",mb.op_math("floor","$v:G_Time")),
+            mb.stmt_set_var("G_Inner",mb.op_sub("$v:G_Time","$v:G_Phase")),
+            mb.stmt_if(mb.op_not(mb.op_eq("$v:G_Phase","$v:G_PrevPhase")),[
+                mb.stmt_set_var("G_PrevPhase","$v:G_Phase"),
+                mb.stmt_if(mb.op_eq("$v:G_Phase",1),[mb.stmt_set_var("G_TargetX","$v:G_X"),mb.stmt_set_var("G_TargetY","$v:G_Y")])]),
+            mb.stmt_set_var("G_Active",0),mb.stmt_set_var("G_Hit",0),mb.stmt_set_var("G_Pos",-55),
+            mb.stmt_if(mb.op_gt("$v:G_Inner",0.6),[
+                mb.stmt_set_var("G_Active",1),mb.stmt_set_var("G_Pos",mb.op_add(-55,mb.op_mul(mb.op_sub("$v:G_Inner",0.6),275))),
+                mb.stmt_if(mb.op_not(mb.op_eq("$v:G_SoundedPhase","$v:G_Phase")),[
+                    mb.stmt_set_var("G_SoundedPhase","$v:G_Phase"),mb.stmt_play_sound("Sonido_GlitchFire")]),
+                mb.stmt_set_var("G_Radius",mb.op_mul(mb.op_sub("$v:G_Inner",0.6),75)),
+                # Scratch clamps a 72px costume to at least 5px. Keep the
+                # collision circle aligned with that minimum rendered scale.
+                mb.stmt_if(mb.op_lt("$v:G_Radius",25/12),[mb.stmt_set_var("G_Radius",25/12)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",0),g_rect(lambda:"$v:G_X",lambda:"$v:G_Y",60,6)),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",1),g_rect(lambda:mb.op_sub("$v:G_X","$v:G_TargetX"),lambda:mb.op_sub("$v:G_Y","$v:G_TargetY"),15,15)),[mb.stmt_set_var("G_Hit",1)]),
+                # Distancia mínima del centro al rombo del núcleo. El círculo
+                # incluye el trazo: r=31, escalado como el SVG r=30.
+                mb.stmt_if(mb.op_eq("$v:G_Phase",2),[
+                    mb.stmt_set_var("G_NearX",abs_g("$v:G_X")),mb.stmt_set_var("G_NearY",abs_g("$v:G_Y")),
+                    mb.stmt_if_else(mb.op_lt(mb.op_add("$v:G_NearX","$v:G_NearY"),6),[
+                        mb.stmt_set_var("G_NearX",0),mb.stmt_set_var("G_NearY",0)],
+                        [mb.stmt_if_else(mb.op_gt(mb.op_sub("$v:G_NearX","$v:G_NearY"),6),[
+                            mb.stmt_change_var("G_NearX",-6)],
+                            [mb.stmt_if_else(mb.op_gt(mb.op_sub("$v:G_NearY","$v:G_NearX"),6),[
+                                mb.stmt_change_var("G_NearY",-6)],
+                                [mb.stmt_set_var("G_Offset",mb.op_div(mb.op_sub(mb.op_add("$v:G_NearX","$v:G_NearY"),6),2)),
+                                 mb.stmt_set_var("G_NearX","$v:G_Offset"),mb.stmt_set_var("G_NearY","$v:G_Offset")])])]),
+                    mb.stmt_if(mb.op_lt(g_dist("$v:G_NearX","$v:G_NearY"),mb.op_mul(mb.op_mul("$v:G_Radius",31/30),mb.op_mul("$v:G_Radius",31/30))),[mb.stmt_set_var("G_Hit",1)])]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",3),mb.op_or(g_rect(lambda:mb.op_sub("$v:G_X","$v:G_Pos"),lambda:mb.op_sub("$v:G_Y",38.5),14,21.5),g_rect(lambda:mb.op_sub("$v:G_X","$v:G_Pos"),lambda:mb.op_add("$v:G_Y",38.5),14,21.5))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",4),mb.op_or(
+                    g_rect(lambda:mb.op_sub("$v:G_X","$v:G_Pos"),lambda:mb.op_sub("$v:G_Y",25),14,14),
+                    g_rect(lambda:mb.op_add("$v:G_X","$v:G_Pos"),lambda:mb.op_add("$v:G_Y",25),14,14))),[mb.stmt_set_var("G_Hit",1)])]),
+            mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Hit",1),mb.op_lt("$v:G_Invuln",0.001)),[
+                mb.stmt_change_var("G_HP",-1),mb.stmt_set_var("G_Invuln",0.45),mb.stmt_play_sound("Sonido_GlitchHit")]),
+            mb.stmt_if_else(mb.op_lt("$v:G_HP",1),[
+                mb.stmt_set_var("G_Success",0),mb.stmt_set_var("Estado_Juego","GLITCH_RESULT"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Reveal",0),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI")],
+                [call("Glitch_Render")])],
+            [mb.stmt_set_var("G_Success",1),mb.stmt_change_var("Puntuacion",100),mb.stmt_play_sound("Sonido_GlitchWin"),
+             mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Trial_Wave",5)),[mb.stmt_set_var("Trial_GlitchDone",1)]),
+             mb.stmt_set_var("Estado_Juego","GLITCH_RESULT"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Reveal",0),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI")])])
+    def nm_cue(label):
+        return [mb.stmt_set_var("NM_FX",label),mb.stmt_set_var("NM_FXTime",0.8)]
+    mb.define_proc("Nightmare_VisualCue",[],[],True,[
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_EventStart","NONE"),mb.op_not(mb.op_eq("$v:NM_Event","NONE"))),nm_cue("WARNING")),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_OldDelayed",0),mb.op_eq("$v:NM_Delayed",1)),nm_cue("PRESSURE")),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_EventStart","DEBT"),mb.op_lt("$v:NM_Rows","$v:NM_OldRows")),nm_cue("DEBT PAID")),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_OldJam",0),mb.op_gt("$v:NM_Jam",0)),nm_cue("JAM LOCK")),
+        mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_OldJam",0),mb.op_eq("$v:NM_Jam",0)),nm_cue("JAM FREE")),
+        mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Chain",0),mb.op_not(mb.op_eq("$v:NM_EventStart","$v:NM_Event"))),nm_cue("CHAIN")),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_gt("$v:Lineas_Turno",0))),nm_cue("OBJECTIVE")),
+        mb.stmt_if(mb.op_gt("$v:Armor_Hit",0),nm_cue("ARMOR HIT")),
+        mb.stmt_if(mb.op_gt("$v:Armor_Broken",0),nm_cue("ARMOR BREAK"))])
+    # Un solo evento comprometido. Las cuentas avanzan únicamente al fijar pieza.
+    mb.define_proc("Nightmare_OnLock",[],[],True,[
+        mb.stmt_set_var("NM_EventStart","$v:NM_Event"),
+        mb.stmt_if(mb.op_gt("$v:NM_Jam",0),[mb.stmt_change_var("NM_Jam",-1)]),
+        mb.stmt_if_else(mb.op_eq("$v:NM_Event","NONE"),[
+            mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Jam",0),mb.op_eq("$v:NM_Submode","ENDLESS")),[
+                mb.stmt_change_var("NM_Cooldown",1),
+                mb.stmt_set_var("NM_Top",0),mb.stmt_set_var("NM_Scan",1),
+                mb.stmt_repeat(40,[mb.stmt_if(mb.op_gt(mb.expr_list_item("Tablero","$v:NM_Scan"),0),[mb.stmt_change_var("NM_Top",1)]),mb.stmt_change_var("NM_Scan",1)]),
+                mb.stmt_if(mb.op_and(mb.op_and(mb.op_gt("$v:NM_Cooldown",4),mb.op_gt("$v:Tiempo_Juego",12)),mb.op_gt("$v:NM_Top",7)),[mb.stmt_set_var("NM_Delayed",1)]),
+                mb.stmt_if(mb.op_and(mb.op_and(mb.op_gt("$v:NM_Cooldown",4),mb.op_gt("$v:Tiempo_Juego",12)),mb.op_lt("$v:NM_Top",8)),[
+                    mb.stmt_set_var("NM_Delayed",0),
+                    mb.stmt_set_var("NM_Cooldown",0),
+                    mb.stmt_if_else(mb.op_eq(mb.op_mod("$v:NM_Sequence",3),0),[
+                        mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",4),
+                        mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)],
+                        [mb.stmt_if_else(mb.op_and(mb.op_eq(mb.op_mod("$v:NM_Sequence",3),2),mb.op_gt("$v:Tiempo_Juego",60)),[
+                            mb.stmt_set_var("NM_Event","DEBT"),mb.stmt_set_var("NM_Warning",12),
+                            mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0)],
+                            [mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)])]),
+                    mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",120),mb.op_eq(mb.op_mod("$v:NM_Sequence",4),3)),[
+                        mb.stmt_if_else(mb.op_eq(mb.op_mod("$v:NM_Sequence",8),3),[
+                            mb.stmt_set_var("NM_Chain",1),mb.stmt_set_var("NM_Event","DOUBLE"),
+                            mb.stmt_set_var("NM_Warning",4),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)],
+                            [mb.stmt_set_var("NM_Chain",2),mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)])]),
+                    mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",180),mb.op_eq(mb.op_mod("$v:NM_Sequence",4),2)),[
+                        mb.stmt_set_var("NM_Event","ARMOR_WARNING"),mb.stmt_set_var("NM_Warning",4)]),
+                    mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",45),mb.op_eq(mb.op_mod("$v:NM_Sequence",6),4)),[mb.stmt_set_var("NM_Event","TRIPLE"),mb.stmt_set_var("NM_Warning",5),mb.stmt_set_var("NM_Rows",3),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0)]),
+                    mb.stmt_change_var("NM_Sequence",1),mb.stmt_play_sound("Sonido_NMWarning")])])],
+            [mb.stmt_if(mb.op_or(mb.op_eq("$v:NM_EventStart","DOUBLE"),mb.op_eq("$v:NM_EventStart","TRIPLE")),[
+                mb.stmt_if(mb.op_eq("$v:NM_Cancelable",1),[
+                    mb.stmt_change_var("NM_Progress","$v:Lineas_Turno"),
+                    mb.stmt_repeat(3,[mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Progress",1),mb.op_gt("$v:NM_Rows",0)),[
+                        mb.stmt_change_var("NM_Progress",-2),mb.stmt_change_var("NM_Rows",-1)])])]),
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    mb.stmt_if(mb.op_gt("$v:NM_Rows",0),nm_cue("IMPACT")),
+                    mb.stmt_repeat("$v:NM_Rows",[mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[call("Garbage_Attack")])]),
+                    mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Event","NONE"),
+                    mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Chain",1),mb.op_eq("$v:Estado_Juego","JUGANDO")),[
+                        mb.stmt_set_var("NM_Event","CHAIN_JAM"),mb.stmt_set_var("NM_Warning",2)])])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","JAM_WARNING"),[
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    mb.stmt_set_var("NM_Jam",7),mb.stmt_set_var("NM_Event","NONE"),
+                    mb.stmt_if(mb.op_eq("$v:NM_Chain",2),[
+                        mb.stmt_set_var("NM_Event","CHAIN_DEBT"),mb.stmt_set_var("NM_Warning",2)])])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","CHAIN_JAM"),[
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    mb.stmt_set_var("NM_Jam",7),mb.stmt_set_var("NM_Event","NONE"),mb.stmt_set_var("NM_Chain",0)])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","CHAIN_DEBT"),[
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    mb.stmt_set_var("NM_Event","DEBT"),mb.stmt_set_var("NM_Warning",12),mb.stmt_set_var("NM_Rows",2),
+                    mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Chain",0)])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","ARMOR_WARNING"),[
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                    call("Nightmare_ArmorAttack"),mb.stmt_set_var("NM_Event","NONE")])]),
+             mb.stmt_if(mb.op_eq("$v:NM_EventStart","DEBT"),[
+                mb.stmt_change_var("NM_Progress","$v:Lineas_Turno"),
+                mb.stmt_repeat(2,[mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Progress",1),mb.op_gt("$v:NM_Rows",0)),[
+                    mb.stmt_change_var("NM_Progress",-2),mb.stmt_change_var("NM_Rows",-1)])]),
+                mb.stmt_change_var("NM_Warning",-1),
+                mb.stmt_if_else(mb.op_eq("$v:NM_Rows",0),[mb.stmt_set_var("NM_Event","NONE")],
+                    [mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
+                        mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",0)])])])])])
+    # Guion por fijaciones. Un hito espera si otra amenaza sigue activa.
+    def trial_trigger(wave, index, threshold, actions):
+        return mb.stmt_if(mb.op_and(
+            mb.op_and(mb.op_eq("$v:Trial_Wave",wave),mb.op_eq("$v:Trial_Event",index)),
+            mb.op_and(mb.op_gt("$v:Trial_Count",threshold-1),
+                mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0)))),
+            actions+[mb.stmt_change_var("Trial_Event",1),mb.stmt_play_sound("Sonido_NMWarning")])
+    def trial_double():
+        return [mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",4),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)]
+    def trial_jam():
+        return [mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)]
+    def trial_debt():
+        return [mb.stmt_set_var("NM_Event","DEBT"),mb.stmt_set_var("NM_Warning",12),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0)]
+    def trial_chain(kind):
+        return [mb.stmt_set_var("NM_Chain",kind)] + (trial_double() if kind == 1 else trial_jam())
+    trial_script = [(1,0,10,trial_double),(2,0,6,trial_jam),(2,1,18,trial_jam),
+                    (3,0,6,trial_debt),(3,1,18,trial_debt),
+                    (4,0,6,lambda:[mb.stmt_set_var("NM_Event","ARMOR_WARNING"),mb.stmt_set_var("NM_Warning",4)]),
+                    (4,1,17,lambda:trial_chain(1)),(4,2,28,lambda:trial_chain(2)),
+                    (5,0,7,lambda:[mb.stmt_set_var("NM_Event","TRIPLE"),mb.stmt_set_var("NM_Warning",5),mb.stmt_set_var("NM_Rows",3),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)]),(5,1,19,lambda:trial_chain(2)),(5,2,30,lambda:trial_chain(1))]
+    mb.define_proc("Trial_OnLock",[],[],True,[
+        mb.stmt_change_var("Trial_Count",1),
+        mb.stmt_if(mb.op_eq(mb.op_mod("$v:Trial_Count",5),0),nm_cue("OBJECTIVE")),
+        mb.stmt_change_var("Trial_Lines","$v:Lineas_Turno"),
+        mb.stmt_if(mb.op_gt("$v:Trial_Lines","$v:Trial_LineGoal"),[mb.stmt_set_var("Trial_Lines","$v:Trial_LineGoal")]),
+        *[trial_trigger(wave,index,threshold,make()) for wave,index,threshold,make in trial_script],
+        mb.stmt_if(mb.op_and(mb.op_and(mb.op_and(mb.op_gt("$v:Trial_Count",mb.op_sub("$v:Trial_Goal",1)),
+            mb.op_eq("$v:Trial_Event","$v:Trial_Required")),
+            mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0))),
+            mb.op_and(mb.op_gt("$v:Trial_Lines",mb.op_sub("$v:Trial_LineGoal",1)),mb.op_or(mb.op_not(mb.op_eq("$v:Trial_Wave",5)),mb.op_eq("$v:Trial_GlitchDone",1)))),[
+            *nm_cue("OBJECTIVE CLEAR"),
+            mb.stmt_if_else(mb.op_eq("$v:Trial_Wave",5),[
+                mb.stmt_set_var("Estado_Juego","TRIAL_CLEAR"),mb.stmt_broadcast("Actualizar_UI")],
+                [mb.stmt_set_var("Estado_Juego","TRIAL_INTERMISSION"),mb.stmt_set_var("Trial_Timer",0),mb.stmt_broadcast("Actualizar_UI")])])])
+    mb.define_proc("Glitch_Move %s %s",["gm_x","gm_y"],["dx","dy"],True,[
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[
+            mb.stmt_change_var("G_X","$a:dx"),mb.stmt_change_var("G_Y","$a:dy"),
+            mb.stmt_if(mb.op_gt("$v:G_X",55),[mb.stmt_set_var("G_X",55)]),mb.stmt_if(mb.op_lt("$v:G_X",-55),[mb.stmt_set_var("G_X",-55)]),
+            mb.stmt_if(mb.op_gt("$v:G_Y",55),[mb.stmt_set_var("G_Y",55)]),mb.stmt_if(mb.op_lt("$v:G_Y",-55),[mb.stmt_set_var("G_Y",-55)]),
+            call("Glitch_Render")])])
     mb.define_proc("Alternar_Pausa",[],[],True,[
-        mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","JUGANDO"),[mb.stmt_set_var("Estado_Juego","PAUSA")],[mb.stmt_if(mb.op_eq("$v:Estado_Juego","PAUSA"),[mb.stmt_set_var("Estado_Juego","JUGANDO")])]),
+        mb.stmt_if_else(mb.op_or(mb.op_or(mb.op_eq("$v:Estado_Juego","JUGANDO"),mb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO")),
+            mb.op_or(mb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),mb.op_or(mb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),mb.op_or(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),mb.op_eq("$v:Estado_Juego","GLITCH_RESULT"))))),
+            [mb.stmt_set_var("Pausa_Origen","$v:Estado_Juego"),mb.stmt_set_var("Estado_Juego","PAUSA")],
+            [mb.stmt_if(mb.op_eq("$v:Estado_Juego","PAUSA"),[mb.stmt_set_var("Estado_Juego","$v:Pausa_Origen")])]),
         mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),mb.stmt_broadcast("Actualizar_UI")])
+    mb.define_proc("Comenzar_Modo",[],[],True,[
+        call(proc_start_code),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+            mb.stmt_set_var("Estado_Juego","NIGHTMARE_INTRO"),mb.stmt_set_var("Nightmare_Intro",0),mb.stmt_broadcast("Actualizar_UI")])])
     key_actions = {
-        "left": ("left arrow",lambda:[call(proc_move_code,proc_move_args,[-1])],True),
-        "right": ("right arrow",lambda:[call(proc_move_code,proc_move_args,[1])],True),
-        "down": ("down arrow",lambda:[call(proc_step_code,proc_step_args,[1])],True),
-        "up": ("up arrow",lambda:[call(proc_rot_code)],False),
+        "left": ("left arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[call("Glitch_Move %s %s",["gm_x","gm_y"],[-6,0])],[call(proc_move_code,proc_move_args,[-1])])],True),
+        "right": ("right arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[call("Glitch_Move %s %s",["gm_x","gm_y"],[6,0])],[call(proc_move_code,proc_move_args,[1])])],True),
+        "down": ("down arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[mb.stmt_if(mb.op_not(mb.op_or(mb.expr_key_pressed("left arrow"),mb.expr_key_pressed("right arrow"))),[call("Glitch_Move %s %s",["gm_x","gm_y"],[0,-6])])],[call(proc_step_code,proc_step_args,[1])])],True),
+        "up": ("up arrow",lambda:[mb.stmt_if_else(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[mb.stmt_if(mb.op_not(mb.op_or(mb.expr_key_pressed("left arrow"),mb.expr_key_pressed("right arrow"))),[call("Glitch_Move %s %s",["gm_x","gm_y"],[0,6])])],[call(proc_rot_code)])],True),
         "space": ("space",lambda:[call(proc_hard_code)],False),
         "c": ("c",lambda:[call(proc_hold_code)],False),
         "p": ("p",lambda:[call("Alternar_Pausa")],False),
-        "r": ("r",lambda:[call(proc_start_code)],False),
-        "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),[call(proc_start_code)])],False)}
+        "m": ("m",lambda:[mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+            mb.stmt_if_else(mb.op_eq("$v:NM_Reduced",0),[mb.stmt_set_var("NM_Reduced",1)],[mb.stmt_set_var("NM_Reduced",0)]),
+            mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[call(proc_render_code)])])],False),
+        "r": ("r",lambda:[call("Comenzar_Modo")],False),
+        "enter": ("enter",lambda:[mb.stmt_if(mb.op_or(mb.op_or(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_eq("$v:Estado_Juego","GAMEOVER")),mb.op_eq("$v:Estado_Juego","TRIAL_CLEAR")),[call("Comenzar_Modo")])],False)}
     for key,mode in [("1","NORMAL"),("2","HARD"),("3","CHAOS")]:
-        key_actions[key]=(key,lambda mode=mode:[mb.stmt_if(mb.op_not(mb.op_eq("$v:Estado_Juego","JUGANDO")),[mb.stmt_set_var("Modo_Juego",mode),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),call(proc_render_code),mb.stmt_broadcast("Actualizar_UI")])],False)
+        key_actions[key]=(key,lambda mode=mode:[mb.stmt_if(mb.op_not(mb.op_eq("$v:Estado_Juego","JUGANDO")),[
+            mb.stmt_set_var("NM_ReturnMenu",0),mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[mb.stmt_set_var("NM_ReturnMenu",1)]),
+            mb.stmt_set_var("Modo_Juego",mode),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),
+            mb.stmt_if(mb.op_eq("$v:NM_ReturnMenu",1),[mb.stmt_set_var("Menu_Timer",0.6)]),call(proc_render_code),mb.stmt_broadcast("Actualizar_UI")])],False)
+    key_actions["4"]=("4",lambda:[mb.stmt_if(mb.op_not(mb.op_eq("$v:Estado_Juego","JUGANDO")),[
+        mb.stmt_if_else(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq("$v:Estado_Juego","MENU")),[
+            mb.stmt_if_else(mb.op_eq("$v:NM_Submode","ENDLESS"),[mb.stmt_set_var("NM_Submode","TRIALS")],[mb.stmt_set_var("NM_Submode","ENDLESS")])],
+            [mb.stmt_set_var("NM_Submode","ENDLESS")]),
+        mb.stmt_set_var("Modo_Juego","NIGHTMARE"),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_set_var("Menu_Timer",0.6),call(proc_render_code),mb.stmt_broadcast("Actualizar_UI")])],False)
+    # Only a separately generated developer fixture has these inputs. Release
+    # builds never create their variables or blocks.
+    if qa_mode:
+        qa_ready = lambda: mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq("$v:Estado_Juego","JUGANDO"))
+        key_actions["5"]=("5",lambda:[mb.stmt_if(mb.op_and(qa_ready(),mb.op_and(mb.op_eq("$v:NM_Event","NONE"),mb.op_eq("$v:NM_Jam",0))),[call("Glitch_Begin")])],False)
+        key_actions["6"]=("6",lambda:[mb.stmt_if(mb.op_and(qa_ready(),mb.op_eq("$v:NM_Event","NONE")),[
+            mb.stmt_set_var("NM_Event","TRIPLE"),mb.stmt_set_var("NM_Rows",3),mb.stmt_set_var("NM_Warning",5),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_play_sound("Sonido_NMWarning")])],False)
+        key_actions["7"]=("7",lambda:[mb.stmt_if(qa_ready(),[mb.stmt_set_var("NM_BurstNext",mb.op_add("$v:Tiempo_Juego",2.1))])],False)
     inputs=[]
     for key,(scratch_key,actions,repeats) in key_actions.items():
+        repeat_actions = actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.05))] if repeats else []
+        if key == "up":
+            repeat_actions = [mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),repeat_actions)]
         body=[mb.stmt_if_else(mb.op_eq("$v:key_"+key,0),actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.16 if key!="down" else 0.05))],
-            [mb.stmt_if(mb.op_gt("$b:"+mb.expr_timer(),"$v:repeat_"+key),actions()+[mb.stmt_set_var("repeat_"+key,mb.op_add("$b:"+mb.expr_timer(),0.05))])] if repeats else []),mb.stmt_set_var("key_"+key,1)]
+            [mb.stmt_if(mb.op_gt("$b:"+mb.expr_timer(),"$v:repeat_"+key),repeat_actions)] if repeats else []),mb.stmt_set_var("key_"+key,1)]
         inputs.append(mb.stmt_if_else(mb.expr_key_pressed(scratch_key),body,[mb.stmt_set_var("key_"+key,0)]))
     mb.define_proc("Leer_Teclado",[],[],True,inputs)
     mb.define_proc("Tick",[],[],True,[
         mb.stmt_set_var("Delta",mb.op_sub("$b:"+mb.expr_timer(),"$v:Ultimo_Tick")),
         mb.stmt_set_var("Ultimo_Tick","$b:"+mb.expr_timer()),
         mb.stmt_if(mb.op_gt("$v:Delta",0.1),[mb.stmt_set_var("Delta",0.1)]),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:Estado_Juego","MENU"),mb.op_gt("$v:Menu_Timer",0)),[
+            mb.stmt_change_var("Menu_Timer",mb.op_sub(0,"$v:Delta")),call(proc_render_code)]),
+        mb.stmt_if(mb.op_and(mb.op_or(mb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),mb.op_eq("$v:Estado_Juego","TRIAL_CLEAR")),mb.op_gt("$v:NM_FXTime",0)),[
+            mb.stmt_change_var("NM_FXTime",mb.op_sub(0,"$v:Delta")),call(proc_render_code)]),
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_or(mb.op_eq("$v:Estado_Juego","GAMEOVER"),mb.op_eq("$v:Estado_Juego","TRIAL_CLEAR"))),[
+            mb.stmt_if(mb.op_lt("$v:Resultado_Timer",0.8),[mb.stmt_change_var("Resultado_Timer","$v:Delta")])]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO"),[
+            mb.stmt_change_var("Nightmare_Intro","$v:Delta"),
+            mb.stmt_if(mb.op_gt("$v:Nightmare_Intro",0.8),[
+                mb.stmt_set_var("Estado_Juego","NIGHTMARE_READY"),mb.stmt_broadcast("Actualizar_UI")])]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","NIGHTMARE_READY"),[
+            mb.stmt_set_var("Estado_Juego","JUGANDO"),mb.stmt_set_var("Delta",0),
+            mb.stmt_if(mb.op_eq("$v:NM_Submode","TRIALS"),nm_cue("OBJECTIVE START"))]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),[
+            mb.stmt_change_var("Trial_Timer","$v:Delta"),
+            mb.stmt_if(mb.op_gt("$v:Trial_Timer",3),[
+                mb.stmt_change_var("Trial_Wave",1),mb.stmt_set_var("Trial_Count",0),mb.stmt_set_var("Trial_Event",0),mb.stmt_set_var("Trial_Lines",0),mb.stmt_set_var("Trial_LineGoal",0),
+                mb.stmt_if(mb.op_eq("$v:Trial_Wave",2),[mb.stmt_set_var("Trial_LineGoal",2)]),
+                mb.stmt_if(mb.op_eq("$v:Trial_Wave",3),[mb.stmt_set_var("Trial_LineGoal",3)]),
+                mb.stmt_if(mb.op_eq("$v:Trial_Wave",5),[mb.stmt_set_var("Trial_LineGoal",4)]),
+                mb.stmt_set_var("Trial_Goal",mb.op_add(15,mb.op_mul(5,"$v:Trial_Wave"))),mb.stmt_set_var("Trial_Required",2),
+                mb.stmt_if(mb.op_gt("$v:Trial_Wave",3),[mb.stmt_set_var("Trial_Required",3)]),
+                mb.stmt_set_var("Estado_Juego","JUGANDO"),mb.stmt_set_var("Delta",0),*nm_cue("OBJECTIVE START"),mb.stmt_broadcast("Actualizar_UI")])]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),[
+            mb.stmt_change_var("G_Timer","$v:Delta"),
+            call("Glitch_Transition"),
+            mb.stmt_if(mb.op_and(mb.op_gt("$v:G_Timer",0.4),mb.op_eq("$v:G_Reveal",0)),[mb.stmt_set_var("G_Reveal",1),mb.stmt_broadcast("Actualizar_UI")]),
+            mb.stmt_if(mb.op_gt("$v:G_Timer",0.8),[
+                mb.stmt_set_var("Estado_Juego","GLITCH_PLAY"),mb.stmt_set_var("Delta",0),call("Glitch_Render"),mb.stmt_broadcast("Actualizar_UI")])]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_PLAY"),[call("Glitch_Advance")]),
+        mb.stmt_if(mb.op_eq("$v:Estado_Juego","GLITCH_RESULT"),[
+            mb.stmt_change_var("G_Timer","$v:Delta"),
+            call("Glitch_Transition"),
+            mb.stmt_if(mb.op_and(mb.op_gt("$v:G_Timer",0.3),mb.op_eq("$v:G_Reveal",0)),[mb.stmt_set_var("G_Reveal",1),mb.stmt_broadcast("Actualizar_UI")]),
+            mb.stmt_if(mb.op_gt("$v:G_Timer",1.4),[
+                mb.stmt_if(mb.op_eq("$v:G_Success",0),
+                    [mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",2),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",0)]),
+                mb.stmt_set_var("repeat_left",mb.op_add("$b:"+mb.expr_timer(),0.16)),mb.stmt_set_var("repeat_right",mb.op_add("$b:"+mb.expr_timer(),0.16)),mb.stmt_set_var("repeat_down",mb.op_add("$b:"+mb.expr_timer(),0.16)),
+                mb.stmt_set_var("Estado_Juego","JUGANDO"),mb.stmt_set_var("Delta",0),mb.stmt_broadcast("Actualizar_UI"),call(proc_render_code)])]),
         mb.stmt_if(mb.op_eq("$v:Estado_Juego","JUGANDO"),[
             mb.stmt_change_var("Tiempo_Juego","$v:Delta"),
+            mb.stmt_if(mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_gt("$v:NM_FXTime",0)),[mb.stmt_change_var("NM_FXTime",mb.op_sub(0,"$v:Delta"))]),
             mb.stmt_if(mb.op_eq("$v:Modo_Juego","CHAOS"),[
                 mb.stmt_set_var("Intervalo_Ataque",mb.op_sub(25,mb.op_div("$v:Tiempo_Juego",30))),
                 mb.stmt_if(mb.op_lt("$v:Intervalo_Ataque",10),[mb.stmt_set_var("Intervalo_Ataque",10)]),
@@ -1785,13 +2240,16 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_set_var("Proximo_Evento",mb.op_add("$v:Tiempo_Juego",mb.op_mul("$v:Intervalo_Ataque",0.6))),mb.stmt_play_sound("Sonido_Caos")]),
                 mb.stmt_if(mb.op_gt("$v:Tiempo_Juego",mb.op_sub("$v:Proximo_Ataque",2)),[mb.stmt_set_var("Evento_Caos","GARBAGE INCOMING")]),
                 mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:Proximo_Ataque"),[call("Garbage_Attack"),mb.stmt_set_var("Proximo_Ataque",mb.op_add("$v:Tiempo_Juego","$v:Intervalo_Ataque")),mb.stmt_set_var("Evento_Caos","NONE")])]),
+            mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Burst",1),mb.op_gt("$v:Tiempo_Juego","$v:NM_BurstEnd")),[mb.stmt_set_var("NM_Burst",0)]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:NM_BurstNext"),[mb.stmt_set_var("NM_Burst",1),mb.stmt_set_var("NM_BurstEnd",mb.op_add("$v:Tiempo_Juego",5)),mb.stmt_set_var("NM_BurstNext",mb.op_add("$v:Tiempo_Juego",20)),mb.stmt_play_sound("Sonido_Caos")])]),
             call(proc_vel_code),
             mb.stmt_if(mb.op_gt(mb.op_sub("$v:Tiempo_Juego","$v:Reloj_Caida"),"$v:Velocidad_Caida"),[call(proc_step_code,proc_step_args,[0]),mb.stmt_set_var("Reloj_Caida","$v:Tiempo_Juego")]),
             col_below(),mb.stmt_if_else(mb.op_eq("$v:Colision_Detectada",1),[
                 mb.stmt_if(mb.op_lt("$v:Bloqueo",0),[mb.stmt_set_var("Bloqueo","$v:Tiempo_Juego")]),
                 mb.stmt_if(mb.op_gt(mb.op_sub("$v:Tiempo_Juego","$v:Bloqueo"),0.35),[mb.stmt_play_sound("Sonido_Caida"),call(proc_lock_code)])],[mb.stmt_set_var("Bloqueo",-1)]),
             call(proc_render_code)])])
-    mb.hat_green_flag([mb.stmt_hide(),mb.stmt_pen_clear(),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_set_var("Modo_Juego","NORMAL"),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_broadcast("Actualizar_UI"),call(proc_render_code),mb.stmt_forever([call("Tick"),call("Leer_Teclado"),mb.stmt_wait(0.01)])])
+    mb.hat_green_flag([mb.stmt_hide(),mb.stmt_pen_clear(),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_set_var("Modo_Juego","NORMAL"),mb.stmt_set_var("NM_Submode","ENDLESS"),call(proc_start_code),mb.stmt_set_var("Estado_Juego","MENU"),mb.stmt_broadcast("Actualizar_UI"),call(proc_render_code),mb.stmt_forever([call("Tick"),call("Leer_Teclado"),mb.stmt_wait(0.01)])])
     mb.hat_broadcast("Iniciar_Juego",[call(proc_start_code)])
     mb.hat_broadcast("Alternar_Pausa",[call("Alternar_Pausa")])
 
@@ -1938,7 +2396,20 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         118,
         84,
     )
-    for m_asset in (modal_menu, modal_pausa, modal_gameover):
+    modal_nm_gameover = register_svg_asset("Nightmare_GameOver", make_nightmare_modal("SYSTEM FAILURE",["STACK LIMIT REACHED","NIGHTMARE ENDED","ENTER TO RESTART"]),118,84)
+    modal_core_loss = register_svg_asset("Core_Defeat", make_nightmare_modal("CORE OVERRUN",["FINAL WAVE FAILED","STACK LIMIT REACHED","ENTER TO RETRY"]),118,84)
+    modal_nightmare = register_svg_asset("Nightmare_Intro", '''<svg xmlns="http://www.w3.org/2000/svg" width="236" height="168"><rect x="1" y="1" width="234" height="166" fill="#101010" stroke="#FFBC32" stroke-width="2"/><path d="M12 41H224 M12 126H224" stroke="#FFBC32"/><text x="14" y="29" fill="#FFBC32" font-family="monospace" font-size="18" font-weight="bold">NIGHTMARE</text><text x="14" y="75" fill="#F5F2E9" font-family="monospace" font-size="12">ENDLESS / INITIALIZING</text><text x="14" y="148" fill="#F5F2E9" font-family="monospace" font-size="11">SURVIVE THE PRESSURE</text></svg>''',118,84)
+    modal_nm_trials = register_svg_asset("Nightmare_Trials_Intro", make_nightmare_modal("NIGHTMARE TRIALS",["WAVE 1: SURVIVAL","20 LOCKS / DOUBLE GARBAGE","CLEAR ALL THREATS"]),118,84)
+    modal_trial = register_svg_asset("Trial_Intermission", make_nightmare_modal("WAVE CLEAR",["BOARD PRESERVED","NEXT WAVE INCOMING","PREPARE TO SURVIVE"]),118,84)
+    modal_wave2 = register_svg_asset("Trial_Wave2", make_nightmare_modal("WAVE 2: LOCKDOWN",["25 LOCKS / 2 LINES","SURVIVE HOLD JAM","CLEAR ALL THREATS"]),118,84)
+    modal_wave3 = register_svg_asset("Trial_Wave3", make_nightmare_modal("WAVE 3: DEBT",["30 LOCKS / 3 LINES","MANAGE GARBAGE DEBT","CLEAR ALL THREATS"]),118,84)
+    modal_wave4 = register_svg_asset("Trial_Wave4", make_nightmare_modal("WAVE 4: CHAIN",["35 LOCKS","ARMOR AND TWO CHAINS","CLEAR ALL THREATS"]),118,84)
+    modal_core = register_svg_asset("Trial_Core", make_nightmare_modal("NIGHTMARE CORE",["40 LOCKS / 4 LINES","SURVIVE THE CHAINS","BEAT GLITCH PROTOCOL"]),118,84)
+    modal_victory = register_svg_asset("Trial_Clear", make_nightmare_modal("TRIAL CLEARED",["NIGHTMARE CORE","FIVE WAVES SURVIVED","ENTER TO PLAY AGAIN"]),118,84)
+    modal_glitch = register_svg_asset("Glitch_Intro", make_nightmare_modal("GLITCH PROTOCOL",["ARROWS MOVE CORE","SURVIVE THE SIGNAL","NO DIAGONAL MOVEMENT"]),118,84)
+    modal_glitch_win = register_svg_asset("Glitch_Win", make_nightmare_modal("CORE STABLE",["SURVIVED","BONUS: 100","RETURNING TO BOARD"]),118,84)
+    modal_glitch_loss = register_svg_asset("Glitch_Loss", make_nightmare_modal("CORE UNSTABLE",["CORE HP: 0","2 GARBAGE IN 2 LOCKS","RETURNING TO BOARD"]),118,84)
+    for m_asset in (modal_menu, modal_pausa, modal_gameover, modal_nm_gameover, modal_core_loss, modal_nightmare, modal_nm_trials, modal_trial, modal_wave2, modal_wave3, modal_wave4, modal_core, modal_victory, modal_glitch, modal_glitch_win, modal_glitch_loss):
         all_zip_files[m_asset["md5ext"]] = m_asset["bytes"]
 
     pb = ScratchBlockBuilder("pan", var_map, list_map, bcast_specs)
@@ -1947,6 +2418,25 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             pb.stmt_goto_xy(0, 6),
             pb.stmt_switch_costume("Menu_Principal"),
             pb.stmt_show(),
+            # Capa visual únicamente: interpola con el reloj lógico de intro.
+            pb.stmt_forever([
+                pb.stmt_if_else(pb.op_and(pb.op_eq("$v:Estado_Juego","NIGHTMARE_INTRO"),pb.op_eq("$v:NM_Reduced",0)),[
+                    pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:Nightmare_Intro",-25)),6),
+                    pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Nightmare_Intro",12.5)))],
+                    [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),pb.op_eq("$v:NM_Reduced",0)),[
+                        pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:G_Timer",-25)),6),
+                        pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:G_Timer",12.5)))],
+                        [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:NM_Reduced",0),pb.op_and(pb.op_eq("$v:Estado_Juego","TRIAL_INTERMISSION"),pb.op_lt("$v:Trial_Timer",0.8))),[
+                            pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:Trial_Timer",-25)),6),
+                            pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Trial_Timer",12.5)))],
+                            [pb.stmt_if_else(pb.op_and(pb.op_eq("$v:NM_Reduced",0),pb.op_and(pb.op_eq("$v:Modo_Juego","NIGHTMARE"),pb.op_and(pb.op_or(pb.op_eq("$v:Estado_Juego","GAMEOVER"),pb.op_eq("$v:Estado_Juego","TRIAL_CLEAR")),pb.op_lt("$v:Resultado_Timer",0.8)))),[
+                                pb.stmt_if_else(pb.op_eq("$v:Estado_Juego","TRIAL_CLEAR"),[
+                                    pb.stmt_goto_xy(pb.op_add(20,pb.op_mul("$v:Resultado_Timer",-25)),6),pb.stmt_set_size(pb.op_add(90,pb.op_mul("$v:Resultado_Timer",12.5)))],
+                                    [pb.stmt_goto_xy(0,pb.op_sub(6,pb.op_mul(pb.op_sub(0.8,"$v:Resultado_Timer"),15))),pb.stmt_set_size(100)])],
+                                [pb.stmt_if(pb.op_not(pb.op_eq("$v:Estado_Juego","PAUSA")),[pb.stmt_set_size(100),pb.stmt_goto_xy(0,6)])])])])]),
+                pb.stmt_if(pb.op_and(pb.op_eq("$v:Estado_Juego","MENU"),pb.op_and(pb.op_gt("$v:Menu_Timer",0),pb.op_eq("$v:NM_Reduced",0))),[
+                    pb.stmt_goto_xy(pb.op_mul("$v:Menu_Timer",20),6),pb.stmt_set_size(pb.op_sub(100,pb.op_mul("$v:Menu_Timer",10)))]),
+                pb.stmt_wait(0.05)])
         ],
         x=40,
         y=40,
@@ -1956,7 +2446,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         [
             pb.stmt_goto_xy(0, 6),
             pb.stmt_if_else(
-                pb.op_eq("$v:Estado_Juego", "JUGANDO"),
+                pb.op_or(pb.op_or(pb.op_eq("$v:Estado_Juego", "JUGANDO"),pb.op_eq("$v:Estado_Juego", "GLITCH_PLAY")),
+                    pb.op_and(pb.op_eq("$v:G_Reveal",1),pb.op_eq("$v:Estado_Juego","GLITCH_INTRO"))),
                 [pb.stmt_hide()],
                 [
                     pb.stmt_show(),
@@ -1970,8 +2461,21 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     ),
                     pb.stmt_if(
                         pb.op_eq("$v:Estado_Juego", "GAMEOVER"),
-                        [pb.stmt_switch_costume("GameOver_Modal")],
+                        [pb.stmt_if_else(pb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+                            pb.stmt_if_else(pb.op_and(pb.op_eq("$v:NM_Submode","TRIALS"),pb.op_eq("$v:Trial_Wave",5)),[pb.stmt_switch_costume("Core_Defeat")],[pb.stmt_switch_costume("Nightmare_GameOver")])],
+                            [pb.stmt_switch_costume("GameOver_Modal")])],
                     ),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "NIGHTMARE_INTRO"),
+                        [pb.stmt_if_else(pb.op_eq("$v:NM_Submode","TRIALS"),[pb.stmt_switch_costume("Nightmare_Trials_Intro")],[pb.stmt_switch_costume("Nightmare_Intro")])]),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "TRIAL_INTERMISSION"),[
+                        pb.stmt_if(pb.op_eq("$v:Trial_Wave",1),[pb.stmt_switch_costume("Trial_Wave2")]),
+                        pb.stmt_if(pb.op_eq("$v:Trial_Wave",2),[pb.stmt_switch_costume("Trial_Wave3")]),
+                        pb.stmt_if(pb.op_eq("$v:Trial_Wave",3),[pb.stmt_switch_costume("Trial_Wave4")]),
+                        pb.stmt_if(pb.op_eq("$v:Trial_Wave",4),[pb.stmt_switch_costume("Trial_Core")])]),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "TRIAL_CLEAR"),[pb.stmt_switch_costume("Trial_Clear")]),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "GLITCH_INTRO"),[pb.stmt_switch_costume("Glitch_Intro")]),
+                    pb.stmt_if(pb.op_eq("$v:Estado_Juego", "GLITCH_RESULT"),[
+                        pb.stmt_if_else(pb.op_eq("$v:G_Success",1),[pb.stmt_switch_costume("Glitch_Win")],[pb.stmt_switch_costume("Glitch_Loss")])]),
                 ],
             ),
         ],
@@ -1992,6 +2496,19 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             {k: v for k, v in modal_menu.items() if k != "bytes"},
             {k: v for k, v in modal_pausa.items() if k != "bytes"},
             {k: v for k, v in modal_gameover.items() if k != "bytes"},
+            {k: v for k, v in modal_nm_gameover.items() if k != "bytes"},
+            {k: v for k, v in modal_core_loss.items() if k != "bytes"},
+            {k: v for k, v in modal_nightmare.items() if k != "bytes"},
+            {k: v for k, v in modal_nm_trials.items() if k != "bytes"},
+            {k: v for k, v in modal_trial.items() if k != "bytes"},
+            {k: v for k, v in modal_wave2.items() if k != "bytes"},
+            {k: v for k, v in modal_wave3.items() if k != "bytes"},
+            {k: v for k, v in modal_wave4.items() if k != "bytes"},
+            {k: v for k, v in modal_core.items() if k != "bytes"},
+            {k: v for k, v in modal_victory.items() if k != "bytes"},
+            {k: v for k, v in modal_glitch.items() if k != "bytes"},
+            {k: v for k, v in modal_glitch_win.items() if k != "bytes"},
+            {k: v for k, v in modal_glitch_loss.items() if k != "bytes"},
         ],
         "sounds": [],
         "volume": 100,

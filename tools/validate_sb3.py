@@ -498,6 +498,50 @@ def run_all_tests(sb3_path: str) -> List[str]:
         "[PASS] Prueba 3 (Rotaciones y Wall Kicks): Wall Kick corrige posición junto a paredes y bloquea giros imposibles entre obstáculos."
     )
 
+    # QA-ROT-T-01: el giro repetido no puede añadir celdas al fijar la T.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Pieza_Actual=3, Pieza_Rotacion=0, Pieza_Col=5, Pieza_Fila=10)
+    for _ in range(12):
+        vm.call_proc("Rotar_Pieza")
+        assert vm.vars["Rotacion_Exito"] == 1
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    occupied = {i for i, value in enumerate(vm.lists["Tablero"]) if value}
+    assert occupied == {84, 93, 94, 95}, occupied
+    assert vm.vars["Lineas"] == 0
+
+    # Una T rotada puede completar dos filas reales en la misma fijación.
+    vm.call_proc("Iniciar_Partida")
+    for row, holes in [(19, {5, 6}), (20, {5})]:
+        for col in range(1, 11):
+            if col not in holes:
+                vm.lists["Tablero"][(row - 1) * 10 + col - 1] = 8
+    vm.vars.update(Pieza_Actual=3, Pieza_Rotacion=0, Pieza_Col=5, Pieza_Fila=16)
+    vm.call_proc("Rotar_Pieza")
+    assert vm.vars["Pieza_Rotacion"] == 1 and vm.vars["Rotacion_Exito"] == 1
+    vm.call_proc("Caida_Instantanea")
+    assert vm.vars["Lineas_Turno"] == 2 and vm.vars["Lineas"] == 2
+    assert sum(1 for value in vm.lists["Tablero"] if value) == 1
+    report.append("[PASS] QA-ROT-T-01: giros repetidos fijan cuatro minos; doble limpieza legítima con T rotada.")
+
+    # T-spin double: tres esquinas ocupadas y giro final 1 -> 2 dentro del hueco.
+    vm.call_proc("Iniciar_Partida")
+    for row, holes in [(19, {4, 5, 6}), (20, {5})]:
+        for col in range(1, 11):
+            if col not in holes:
+                vm.lists["Tablero"][(row - 1) * 10 + col - 1] = 8
+    vm.lists["Tablero"][173] = 8  # fila 18, columna 4: tercera esquina ocupada
+    vm.vars.update(Pieza_Actual=3, Pieza_Rotacion=1, Pieza_Col=5, Pieza_Fila=19)
+    vm.call_proc("Comprobar_Colision %s %s %s %s", 3, 5, 19, 1)
+    assert vm.vars["Colision_Detectada"] == 0
+    vm.call_proc("Rotar_Pieza")
+    assert vm.vars["Rotacion_Exito"] == 1 and vm.vars["Pieza_Rotacion"] == 2
+    assert vm.vars["Pieza_Col"] == 5 and vm.vars["Pieza_Fila"] == 19
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Lineas_Turno"] == 2 and vm.vars["Lineas"] == 2
+    assert vm.vars["Puntuacion"] == 300
+    assert sum(1 for value in vm.lists["Tablero"] if value) == 1
+    report.append("[PASS] QA-ROT-T-01: T-spin double con tres esquinas ocupadas y dos filas completas.")
+
     vm.call_proc("Iniciar_Partida")
     vm.vars["Pieza_Actual"] = 2
     vm.vars["Pieza_Col"] = 5
@@ -578,7 +622,399 @@ def run_all_tests(sb3_path: str) -> List[str]:
         vm.call_proc("Actualizar_Velocidad_Y_Caos")
         assert 0.07 <= vm.vars["Velocidad_Caida"] < base
     report.append("[PASS] Tres modos: 0.65 / 0.30 / 0.23 s, aceleración y piso de 0.07 s.")
+    vm.vars["Modo_Juego"] = "NIGHTMARE"
+    vm.call_proc("Comenzar_Modo")
+    assert vm.vars["Estado_Juego"] == "NIGHTMARE_INTRO"
+    assert abs(vm.vars["Velocidad_Caida"] - .18) < 1e-9
+    vm.sim_timer += .1
+    vm.call_proc("Tick")
+    intro_before = vm.vars["Nightmare_Intro"]
+    vm.call_proc("Alternar_Pausa")
+    for _ in range(10):
+        vm.sim_timer += .1
+        vm.call_proc("Tick")
+    assert vm.vars["Nightmare_Intro"] == intro_before and vm.vars["Tiempo_Juego"] == 0
+    vm.call_proc("Alternar_Pausa")
+    assert vm.vars["Estado_Juego"] == "NIGHTMARE_INTRO"
+    for _ in range(10):
+        vm.sim_timer += .1
+        vm.call_proc("Tick")
+    assert vm.vars["Estado_Juego"] == "JUGANDO"
+    vm.vars.update(Nivel=999, Tiempo_Juego=99999)
+    vm.call_proc("Actualizar_Velocidad_Y_Caos")
+    assert vm.vars["Velocidad_Caida"] >= .07
+    report.append("[PASS] Nightmare: intro y pausa, reanudación y límite de gravedad.")
+    # Confirmaciones visuales: selección determinista, reloj pausado y reinicio.
+    for values, expected in [
+        ({"NM_EventStart":"NONE", "NM_Event":"DOUBLE"}, "WARNING"),
+        ({"NM_EventStart":"NONE", "NM_Delayed":1}, "PRESSURE"),
+        ({"NM_EventStart":"DEBT", "NM_Event":"DEBT", "NM_OldRows":2, "NM_Rows":1}, "DEBT PAID"),
+        ({"NM_OldJam":0, "NM_Jam":7}, "JAM LOCK"),
+        ({"NM_OldJam":1, "NM_Jam":0}, "JAM FREE"),
+        ({"NM_EventStart":"DOUBLE", "NM_Event":"CHAIN_JAM", "NM_Chain":1}, "CHAIN"),
+        ({"Armor_Hit":1}, "ARMOR HIT"),
+        ({"Armor_Broken":1}, "ARMOR BREAK"),
+        ({"NM_Submode":"TRIALS", "Lineas_Turno":1}, "OBJECTIVE")]:
+        vm.vars.update(NM_EventStart="NONE",NM_Event="NONE",NM_OldRows=0,NM_Rows=0,
+                       NM_OldJam=0,NM_Jam=0,NM_OldDelayed=0,NM_Delayed=0,NM_Chain=0,Armor_Hit=0,Armor_Broken=0,Lineas_Turno=0,NM_Submode="ENDLESS",NM_FX="NONE",NM_FXTime=0)
+        vm.vars.update(values); vm.call_proc("Nightmare_VisualCue")
+        assert vm.vars["NM_FX"] == expected and vm.vars["NM_FXTime"] == .8
+    vm.vars.update(Estado_Juego="JUGANDO",NM_Submode="ENDLESS",NM_Event="NONE",NM_FXTime=.8,Tiempo_Juego=0)
+    vm.call_proc("Alternar_Pausa"); vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["NM_FXTime"] == .8
+    vm.call_proc("Alternar_Pausa"); vm.sim_timer += .1; vm.call_proc("Tick")
+    assert 0 < vm.vars["NM_FXTime"] < .8
+    vm.call_proc("Iniciar_Partida"); assert vm.vars["NM_FXTime"] == 0
+    vm.vars.update(Estado_Juego="GAMEOVER",Resultado_Timer=0)
+    vm.sim_timer += .1; vm.call_proc("Tick")
+    assert 0 < vm.vars["Resultado_Timer"] <= .1
+    vm.call_proc("Iniciar_Partida"); assert vm.vars["Resultado_Timer"] == 0
+    report.append("[PASS] Nightmare: señales visuales, pausa, reanudación y reinicio.")
+    # Pruebas del procesador por pieza: avisos, cancelación y duración.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=4, NM_Rows=2, Lineas_Turno=0)
+    for remaining in (3, 2, 1):
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Warning"] == remaining
+        assert not any(vm.lists["Tablero"])
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE"
+    assert sum(v == 8 for v in vm.lists["Tablero"]) == 18
+    vm.call_proc("Nightmare_OnLock")
+    assert sum(v == 8 for v in vm.lists["Tablero"]) == 18
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=1, NM_Rows=2, NM_Progress=0, Lineas_Turno=4)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and not any(vm.lists["Tablero"])
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=1, NM_Rows=2, NM_Progress=0, Lineas_Turno=2)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 9
+    # Triple: 0, 1, 2 or 3 rows cancelled; the remaining rows materialize once.
+    for lines, rows in [(0,3),(2,2),(4,1),(6,0)]:
+        vm.call_proc("Iniciar_Partida")
+        vm.vars.update(NM_Event="TRIPLE",NM_Warning=2,NM_Rows=3,NM_Progress=0,NM_Cancelable=1,Lineas_Turno=lines)
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Rows"] == rows and vm.vars["NM_Warning"] == 1
+        vm.vars["Lineas_Turno"] = 0
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 9*rows
+        for row in range(rows):
+            assert vm.lists["Tablero"][190-row*10:200-row*10].count(0) == 1
+        vm.call_proc("Nightmare_OnLock")
+        assert sum(v == 8 for v in vm.lists["Tablero"]) == 9*rows
+    report.append("[PASS] Triple: aviso, cancelación y materialización única de 0–3 filas (intérprete).")
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Tiempo_Juego=13, Lineas_Turno=0)
+    for _ in range(5):
+        vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "DOUBLE" and vm.vars["NM_Warning"] == 4
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="JAM_WARNING", NM_Warning=2, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Jam"] == 0 and vm.vars["NM_Warning"] == 1
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Jam"] == 7
+    saved = vm.vars["Pieza_Guardada"]
+    vm.call_proc("Guardar_Hold")
+    assert vm.vars["Pieza_Guardada"] == saved and vm.vars["Puede_Guardar"] == 1
+    for remaining in range(6, -1, -1):
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Jam"] == remaining
+    vm.call_proc("Guardar_Hold")
+    assert vm.vars["Puede_Guardar"] == 0
+    for lines, expected_rows in [(0,2),(1,2),(2,1),(3,1),(4,0)]:
+        vm.call_proc("Iniciar_Partida")
+        vm.vars.update(NM_Event="DEBT", NM_Warning=12, NM_Rows=2, NM_Progress=0, Lineas_Turno=lines)
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Rows"] == expected_rows
+        assert vm.vars["NM_Event"] == ("NONE" if expected_rows == 0 else "DEBT")
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DEBT", NM_Warning=12, NM_Rows=2, NM_Progress=0, Lineas_Turno=1)
+    vm.call_proc("Nightmare_OnLock")
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Rows"] == 1 and vm.vars["NM_Progress"] == 0
+    vm.call_proc("Alternar_Pausa")
+    frozen = (vm.vars["NM_Event"], vm.vars["NM_Warning"], vm.vars["NM_Rows"])
+    vm.sim_timer += 1
+    vm.call_proc("Tick")
+    assert frozen == (vm.vars["NM_Event"], vm.vars["NM_Warning"], vm.vars["NM_Rows"])
+    vm.call_proc("Iniciar_Partida")
+    assert vm.vars["NM_Event"] == "NONE" and vm.vars["NM_Rows"] == 0 and vm.vars["NM_Jam"] == 0
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="DEBT", NM_Warning=12, NM_Rows=2, NM_Progress=0, Lineas_Turno=0)
+    for _ in range(12):
+        vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "DOUBLE" and vm.vars["NM_Warning"] == 2
+    assert not any(vm.lists["Tablero"])
+    vm.vars["Lineas_Turno"] = 4  # la deuda vencida ya se convirtió en ataque
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Warning"] == 1 and vm.vars["NM_Rows"] == 2 and not any(vm.lists["Tablero"])
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 18
+    # Cadena doble -> jam: cada etapa conserva su aviso completo.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Tiempo_Juego=121, NM_Cooldown=5, NM_Sequence=3, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Chain"],vm.vars["NM_Event"],vm.vars["NM_Warning"]) == (1,"DOUBLE",4)
+    for _ in range(4): vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Warning"],vm.vars["NM_Jam"]) == ("CHAIN_JAM",2,0)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Warning"] == 1 and vm.vars["NM_Jam"] == 0
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Jam"],vm.vars["NM_Chain"]) == ("NONE",7,0)
+    # Cadena jam -> deuda: dos piezas de aviso y no se consume la deuda al activarla.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Tiempo_Juego=121, NM_Cooldown=5, NM_Sequence=7, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Chain"],vm.vars["NM_Event"],vm.vars["NM_Warning"]) == (2,"JAM_WARNING",2)
+    vm.call_proc("Nightmare_OnLock"); vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Warning"],vm.vars["NM_Jam"]) == ("CHAIN_DEBT",2,7)
+    vm.call_proc("Nightmare_OnLock"); vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Event"],vm.vars["NM_Warning"],vm.vars["NM_Jam"]) == ("DEBT",12,5)
+    vm.call_proc("Iniciar_Partida")
+    assert vm.vars["NM_Chain"] == 0 and vm.vars["NM_Jam"] == 0
+    vm.vars.update(Tiempo_Juego=121, NM_Cooldown=5, NM_Sequence=3, Lineas_Turno=0)
+    for i in range(8): vm.lists["Tablero"][i] = 8
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Delayed"],vm.vars["NM_Event"],vm.vars["NM_Sequence"]) == (1,"NONE",3)
+    for i in range(8): vm.lists["Tablero"][i] = 0
+    vm.call_proc("Nightmare_OnLock")
+    assert (vm.vars["NM_Delayed"],vm.vars["NM_Event"],vm.vars["NM_Warning"]) == (0,"DOUBLE",4)
+    vm.vars.update(NM_Event="DOUBLE", NM_Warning=1, NM_Rows=2, NM_Chain=1, NM_Cancelable=1, Lineas_Turno=0)
+    vm.lists["Tablero"][0] = 8
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["Estado_Juego"] == "GAMEOVER" and vm.vars["NM_Event"] == "NONE"
+    assert sum(v == 8 for v in vm.lists["Tablero"][-20:]) == 9
+    vm.call_proc("Iniciar_Partida")
+    assert vm.vars["NM_Chain"] == 0 and not any(vm.lists["Tablero"])
+    report.append("[PASS] Chaos Chain: ambas secuencias, aviso completo, convivencia y reinicio.")
+    report.append("[PASS] Nightmare: aviso y cancelación de basura doble; Hold Jam de siete fijaciones.")
+    report.append("[PASS] Nightmare: deuda, progreso parcial, vencimiento y aviso final de dos piezas.")
+    # Blindaje real del SB3: una fila intacta completa no requiere huecos.
+    vm.call_proc("Iniciar_Partida")
+    vm.lists["Tablero"][-10:] = [9] * 10  # caso adversarial sin celdas ordinarias
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.lists["Tablero"][-10:] == [10] * 10
+    assert vm.vars["Armor_Hit"] == 1 and vm.vars["Lineas_Turno"] == 0 and vm.vars["Puntuacion"] == 0
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.vars["Armor_Hit"] == 0 and vm.vars["Armor_Broken"] == 1 and vm.vars["Lineas_Turno"] == 1
+    assert not any(vm.lists["Tablero"]) and vm.vars["Puntuacion"] == 100
+    # Compactación simultánea: dos filas se agrietan, una ordinaria se elimina.
+    vm.call_proc("Iniciar_Partida")
+    vm.lists["Tablero"][-30:] = [9] * 10 + [2] * 10 + [9] * 10
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.vars["Armor_Hit"] == 2 and vm.vars["Lineas_Turno"] == 1
+    assert vm.lists["Tablero"][-20:] == [10] * 20
+    vm.call_proc("Revisar_Y_Eliminar_Lineas")
+    assert vm.vars["Lineas_Turno"] == 2 and vm.vars["Armor_Broken"] == 2 and not any(vm.lists["Tablero"])
+    # T-spin double: una fila normal se limpia y la blindada se resuelve
+    # automáticamente en la siguiente fijación sin alcanzar ningún hueco.
+    vm.call_proc("Iniciar_Partida")
+    for col in range(1,11):
+        if col not in {4,5,6}: vm.lists["Tablero"][180+col-1] = 9
+        if col != 5: vm.lists["Tablero"][190+col-1] = 8
+    vm.lists["Tablero"][173] = 8
+    vm.vars.update(Pieza_Actual=3,Pieza_Rotacion=1,Pieza_Col=5,Pieza_Fila=19)
+    vm.call_proc("Rotar_Pieza")
+    assert vm.vars["Pieza_Rotacion"] == 2 and vm.vars["Rotacion_Exito"] == 1
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Lineas_Turno"] == 1 and vm.vars["Armor_Hit"] == 1
+    assert all(vm.lists["Tablero"][-10:]) and vm.lists["Tablero"][-10:].count(10) == 7
+    vm.vars.update(Pieza_Actual=2,Pieza_Rotacion=0,Pieza_Col=5,Pieza_Fila=8)
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Lineas_Turno"] == 1 and 10 not in vm.lists["Tablero"]
+    # Inserción avisada usa el garbage existente y conserva su único hueco.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(NM_Event="ARMOR_WARNING", NM_Warning=4, Lineas_Turno=0)
+    for _ in range(3): vm.call_proc("Nightmare_OnLock")
+    assert not any(vm.lists["Tablero"]) and vm.vars["NM_Warning"] == 1
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["NM_Event"] == "NONE" and vm.lists["Tablero"][-10:].count(9) == 9
+    assert vm.lists["Tablero"][-10:].count(0) == 1
+    vm.call_proc("Comprobar_Colision %s %s %s %s",vm.vars["Pieza_Actual"],vm.vars["Pieza_Col"],vm.vars["Pieza_Fila"],vm.vars["Pieza_Rotacion"])
+    assert vm.vars["Colision_Detectada"] == 0
+    vm.call_proc("Iniciar_Partida")
+    vm.lists["Tablero"][0] = 8
+    vm.vars.update(NM_Event="ARMOR_WARNING", NM_Warning=1, Lineas_Turno=0)
+    vm.call_proc("Nightmare_OnLock")
+    assert vm.vars["Estado_Juego"] == "GAMEOVER" and vm.vars["NM_Event"] == "NONE"
+    assert vm.lists["Tablero"][-10:].count(9) == 9
+    vm.call_proc("Iniciar_Partida")
+    assert not any(vm.lists["Tablero"]) and vm.vars["Armor_Hit"] == 0
+    # Comparar la compactación Scratch con una especificación simultánea
+    # independiente sobre filas mixtas, completas y vacías.
+    qa_rng = random.Random(311)
+    for _ in range(12):
+        vm.call_proc("Iniciar_Partida")
+        rows = []
+        for _row in range(20):
+            row = [qa_rng.choice((1, 3, 8, 9, 10)) for _col in range(10)]
+            if qa_rng.random() < .8: row[qa_rng.randrange(10)] = 0
+            rows.append(row)
+        retained, cleared, damaged = [], 0, 0
+        for row in rows:
+            if all(row) and 9 in row:
+                retained.append([10 if cell == 9 else cell for cell in row]); damaged += 1
+            elif all(row): cleared += 1
+            else: retained.append(row)
+        expected = [[0]*10 for _ in range(cleared)] + retained
+        vm.lists["Tablero"] = [cell for row in rows for cell in row]
+        vm.call_proc("Revisar_Y_Eliminar_Lineas")
+        assert vm.lists["Tablero"] == [cell for row in expected for cell in row]
+        assert vm.vars["Lineas_Turno"] == cleared and vm.vars["Armor_Hit"] == damaged
+    report.append("[PASS] Blindaje Scratch: aviso, daño, resolución automática, compactación y reinicio.")
+    # Trials: cada hito anunciado se inicia una sola vez y se difiere si
+    # otra amenaza sigue activa. La victoria espera a que termine el guion.
+    vm.vars.update(Modo_Juego="NIGHTMARE", NM_Submode="TRIALS")
+    vm.call_proc("Iniciar_Partida")
+    for wave, event, count, expected in [
+        (1,0,9,"DOUBLE"),(2,0,5,"JAM_WARNING"),(2,1,17,"JAM_WARNING"),
+        (3,0,5,"DEBT"),(3,1,17,"DEBT"),(4,0,5,"ARMOR_WARNING"),
+        (4,1,16,"DOUBLE"),(4,2,27,"JAM_WARNING"),
+        (5,0,6,"TRIPLE"),(5,1,18,"JAM_WARNING"),(5,2,29,"DOUBLE")]:
+        vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=wave,Trial_Event=event,Trial_Count=count,
+                       Trial_Goal=15+5*wave,Trial_Required=1 if wave==1 else (2 if wave<4 else 3),
+                       NM_Event="NONE",NM_Jam=0,NM_Chain=0)
+        vm.call_proc("Trial_OnLock")
+        assert vm.vars["NM_Event"] == expected and vm.vars["Trial_Event"] == event+1
+    vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=1,Trial_Count=19,Trial_Goal=20,
+                   Trial_Event=1,Trial_Required=1,NM_Event="DOUBLE",NM_Jam=0)
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "JUGANDO"  # no se descarta un ataque
+    vm.vars["NM_Event"]="NONE"
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_INTERMISSION"
+    assert vm.vars["NM_FX"] == "OBJECTIVE CLEAR" and vm.vars["NM_FXTime"] == .8
+    vm.call_proc("Alternar_Pausa"); frozen_time=vm.vars["Tiempo_Juego"]
+    vm.sim_timer += 1; vm.call_proc("Tick")
+    assert vm.vars["Trial_Timer"] == 0 and vm.vars["Tiempo_Juego"] == frozen_time
+    vm.call_proc("Alternar_Pausa")
+    for _ in range(32):
+        vm.sim_timer += .1; vm.call_proc("Tick")
+    assert (vm.vars["Estado_Juego"],vm.vars["Trial_Wave"],vm.vars["Trial_Goal"]) == ("JUGANDO",2,25)
+    assert vm.vars["NM_FX"] == "OBJECTIVE START" and vm.vars["NM_FXTime"] > 0
+    assert vm.vars["Trial_LineGoal"] == 2 and vm.vars["Trial_Lines"] == 0
+    vm.vars.update(Trial_Count=24,Trial_Event=2,Trial_Required=2,NM_Event="NONE",NM_Jam=0,Lineas_Turno=0)
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "JUGANDO"  # fijaciones solas no bastan
+    vm.vars["Lineas_Turno"] = 2
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_INTERMISSION"
+    vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=5,Trial_Count=39,Trial_Goal=40,
+                   Trial_Event=3,Trial_Required=3,NM_Event="NONE",NM_Jam=0,Trial_GlitchDone=1,Trial_LineGoal=4,Trial_Lines=4,Lineas_Turno=0)
+    vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
+    assert vm.vars["NM_FX"] == "OBJECTIVE CLEAR" and vm.vars["NM_FXTime"] > 0
+    for _ in range(10): vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["NM_FXTime"] <= 0
+    assert not any(str(costume).startswith("FX_") for _,_,costume in vm.stamps_log)
+    vm.call_proc("Comenzar_Modo")
+    assert vm.vars["Trial_Wave"] == 1 and vm.vars["Trial_Count"] == 0
+    # Recorrido completo del guion, sin simular habilidad humana: limpiar la
+    # pila en cada iteración aísla temporizadores y progresión de oleadas.
+    vm.call_proc("Iniciar_Partida")
+    seen_waves = {1}
+    for _ in range(300):
+        if vm.vars["Estado_Juego"] == "TRIAL_CLEAR": break
+        if vm.vars["Estado_Juego"] == "TRIAL_INTERMISSION":
+            before_board = list(vm.lists["Tablero"])
+            for _tick in range(31):
+                vm.sim_timer += .1; vm.call_proc("Tick")
+            assert vm.lists["Tablero"] == before_board
+            seen_waves.add(vm.vars["Trial_Wave"])
+        else:
+            vm.lists["Tablero"] = [0] * 200  # fixture, no partida real
+            vm.vars["Lineas_Turno"] = 1  # fixture: una limpieza por fijación
+            if vm.vars["Trial_Wave"] == 5 and vm.vars["Trial_Count"] >= 36:
+                vm.vars["Trial_GlitchDone"] = 1  # el microjuego se prueba por separado
+            vm.call_proc("Nightmare_OnLock")
+            assert vm.vars["Estado_Juego"] == "JUGANDO"
+            vm.call_proc("Trial_OnLock")
+    assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR" and seen_waves == {1,2,3,4,5}
+    report.append("[PASS] Trials: once hitos, ataque pendiente, pausa, avance, victoria y reinicio.")
+    # Activación real tras una fijación en Core, con el tablero y sus relojes
+    # congelados durante el protocolo y la pausa.
+    vm.call_proc("Iniciar_Partida")
+    vm.vars.update(Trial_Wave=5,Trial_Count=35,Trial_Event=3,Trial_Required=3,Trial_Goal=40,
+                   Trial_GlitchDone=0,NM_Event="NONE",NM_Jam=0,Tiempo_Juego=70,
+                   Pieza_Actual=2,Pieza_Rotacion=0,Pieza_Col=5,Pieza_Fila=10)
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Estado_Juego"] == "GLITCH_INTRO"
+    frozen_board=list(vm.lists["Tablero"])
+    frozen_times=(vm.vars["Tiempo_Juego"],vm.vars["Reloj_Caida"],vm.vars["Bloqueo"])
+    for _ in range(3): vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["G_Reveal"] == 0 and 50 < vm.vars["G_VisualScale"] < 100
+    assert any(costume == "G_ARENA" for _,_,costume in vm.stamps_log)
+    vm.call_proc("Alternar_Pausa"); transition_time=vm.vars["G_Timer"]
+    vm.sim_timer += .3; vm.call_proc("Tick"); assert vm.vars["G_Timer"] == transition_time
+    vm.call_proc("Alternar_Pausa")
+    vm.vars["NM_Reduced"] = 1; vm.call_proc("Glitch_Transition"); assert vm.vars["G_VisualScale"] == 100
+    vm.vars["NM_Reduced"] = 0
+    for _ in range(7): vm.sim_timer += .1; vm.call_proc("Tick")
+    assert vm.vars["Estado_Juego"] == "GLITCH_PLAY"
+    vm.call_proc("Glitch_Move %s %s",6,0); assert vm.vars["G_X"] == 6
+    vm.call_proc("Alternar_Pausa"); frozen_core=(vm.vars["G_Time"],vm.vars["G_X"],vm.vars["G_HP"])
+    vm.sim_timer += 1; vm.call_proc("Tick"); vm.call_proc("Glitch_Move %s %s",6,0)
+    assert frozen_core == (vm.vars["G_Time"],vm.vars["G_X"],vm.vars["G_HP"])
+    assert frozen_board == vm.lists["Tablero"] and frozen_times == (vm.vars["Tiempo_Juego"],vm.vars["Reloj_Caida"],vm.vars["Bloqueo"])
+    vm.call_proc("Alternar_Pausa")
+    # Un punto de impacto para cada patrón; la invulnerabilidad evita dobles golpes.
+    for phase,x,y in [(0,0,0),(1,0,0),(2,0,0),(3,-27,35),(4,-27,25)]:
+        vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=phase+.4,G_PrevPhase=phase,
+                       G_X=x,G_Y=y,G_TargetX=0,G_TargetY=0,G_HP=3,G_Invuln=0,Delta=0)
+        vm.call_proc("Glitch_Advance"); assert vm.vars["G_HP"] == 3 and vm.vars["G_Active"] == 0, phase
+        vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=phase+.7,G_PrevPhase=phase,
+                       G_X=x,G_Y=y,G_TargetX=0,G_TargetY=0,G_HP=3,G_Invuln=0,Delta=0)
+        vm.call_proc("Glitch_Advance"); assert vm.vars["G_HP"] == 2, phase
+        vm.call_proc("Glitch_Advance"); assert vm.vars["G_HP"] == 2, phase
+    # Ruta de referencia con pasos de 6 px cada 50 ms; no demuestra balance
+    # en hardware real ni prueba todas las posiciones de inicio posibles.
+    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=0,G_PrevPhase=-1,G_X=0,G_Y=-35,G_HP=3,G_Invuln=0)
+    for _ in range(105):
+        if vm.vars["Estado_Juego"] != "GLITCH_PLAY": break
+        phase=int(vm.vars["G_Time"]); inner=vm.vars["G_Time"]-phase
+        if phase == 1 and .05 < inner < .45 and vm.vars["G_X"] < 30:
+            vm.call_proc("Glitch_Move %s %s",6,0)
+        if phase == 3 and .05 < inner < .55 and vm.vars["G_Y"] < -3:
+            vm.call_proc("Glitch_Move %s %s",0,6)
+        vm.vars["Delta"] = .05; vm.call_proc("Glitch_Advance")
+    assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 1 and vm.vars["G_HP"] == 3
+    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=4.99,G_HP=1,Delta=.05)
+    score_before=vm.vars["Puntuacion"]; vm.call_proc("Glitch_Advance")
+    assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 1
+    for _ in range(16):
+        vm.sim_timer += .1; vm.call_proc("Tick")
+        if vm.vars["Estado_Juego"] == "JUGANDO": break
+    assert vm.vars["Estado_Juego"] == "JUGANDO" and vm.vars["Puntuacion"] == score_before+100
+    assert vm.vars["Trial_GlitchDone"] == 1 and vm.lists["Tablero"] == frozen_board
+    assert frozen_times == (vm.vars["Tiempo_Juego"],vm.vars["Reloj_Caida"],vm.vars["Bloqueo"])
+    vm.vars.update(Trial_Count=39,Trial_Event=3,Trial_Required=3,Trial_Goal=40,
+                   Pieza_Actual=2,Pieza_Rotacion=0,Pieza_Col=5,Pieza_Fila=4)
+    vm.call_proc("Fijar_Y_Procesar_Pieza")
+    assert vm.vars["Estado_Juego"] == "TRIAL_CLEAR"
+    # Fallar anuncia la penalización una sola vez; reiniciar elimina el estado.
+    vm.vars["Trial_GlitchDone"] = 0
+    vm.call_proc("Glitch_Begin")
+    vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=.7,G_PrevPhase=0,G_X=0,G_Y=0,G_HP=1,G_Invuln=0,Delta=0)
+    vm.call_proc("Glitch_Advance"); assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 0
+    for _ in range(16):
+        vm.sim_timer += .1; vm.call_proc("Tick")
+        if vm.vars["Estado_Juego"] == "JUGANDO": break
+    assert (vm.vars["NM_Event"],vm.vars["NM_Rows"],vm.vars["NM_Warning"]) == ("DOUBLE",2,2)
+    assert vm.vars["Trial_GlitchDone"] == 0  # fallar no cumple el objetivo del Core
+    # Quedarse inmóvil desde el spawn no debe ganar el minijuego por defecto.
+    vm.call_proc("Glitch_Begin")
+    vm.vars["Estado_Juego"] = "GLITCH_PLAY"
+    for _ in range(100):
+        if vm.vars["Estado_Juego"] != "GLITCH_PLAY": break
+        vm.vars["Delta"] = .05; vm.call_proc("Glitch_Advance")
+    assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 0
+    vm.call_proc("Iniciar_Partida"); assert vm.vars["NM_Event"] == "NONE" and vm.vars["Trial_GlitchDone"] == 0
+    report.append("[PASS] Glitch: cinco colisiones, invulnerabilidad, pausa, retorno y resolución única.")
+    vm.vars["NM_Submode"]="ENDLESS"
     vm.vars["Modo_Juego"]="NORMAL"
+    vm.sim_timer=0  # el siguiente fixture usa un origen temporal nuevo
     vm.call_proc("Iniciar_Partida")
     # Ejecutar el mismo Tick que invoca el hilo principal, con tiempo simulado.
     for n in range(1,1201):
