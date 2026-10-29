@@ -821,7 +821,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         "puntos_base": ("var_puntos_base", 0),
     }
 
-    for name, value in {"Tiempo_Juego":0, "Ultimo_Tick":0, "Delta":0, "Bloqueo":-1,
+    for name, value in {"Tiempo_Juego":0, "Ultimo_Tick":0, "Delta":0, "Velocidad_Factor":0, "NM_BurstNext":15, "NM_BurstEnd":0, "NM_Burst":0, "Bloqueo":-1,
                         "Evento_Fin":0, "Proximo_Evento":12, "Proximo_Ataque":25,
                         "Intervalo_Ataque":25, "Hueco":1, "Eventos":0, "hud_num":0, "hud_pos":0,
                         "Nightmare_Intro":0, "Pausa_Origen":"JUGANDO",
@@ -950,7 +950,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
         motor_costumes.append({k: v for k, v in casset.items() if k != "bytes"})
 
     # HUD vectorial: cifras y estados estampados, sin monitores de variables.
-    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","ENDLESS","TRIALS","WAVE","/","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED","ARMOR INCOMING","SIGNAL BEAM","TARGET MARKER","PULSE RING","SWEEP WALL","DATA FRAGMENTS","CHARGE","ACTIVE","CORE HP","MOTION LOW"]:
+    for label in [str(n) for n in range(10)]+["NORMAL","HARD","CHAOS","NIGHTMARE","ENDLESS","TRIALS","WAVE","/","NONE","DIFFICULT PIECES","SPEED BURST","GARBAGE INCOMING","DOUBLE GARBAGE","TRIPLE GARBAGE","BURST SOON","HOLD JAM SOON","HOLD JAM","GARBAGE DEBT","ROWS","IN","LINES","CHAIN: DOUBLE > JAM","CHAIN: JAM > DEBT","DEBT SOON","PRESSURE DELAYED","ARMOR INCOMING","SIGNAL BEAM","TARGET MARKER","PULSE RING","SWEEP WALL","DATA FRAGMENTS","CHARGE","ACTIVE","CORE HP","MOTION LOW"]:
         safe_label = label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         asset = register_svg_asset("HUD_"+label, f'<svg xmlns="http://www.w3.org/2000/svg" width="130" height="24"><text x="65" y="17" text-anchor="middle" font-family="sans-serif" font-size="{12 if len(label)>10 else 17}" fill="#E5EEF9">{safe_label}</text></svg>',65,12)
         all_zip_files[asset["md5ext"]]=asset["bytes"]
@@ -1151,13 +1151,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     proc_vel_code = "Actualizar_Velocidad_Y_Caos"
     mb.define_proc(proc_vel_code, [], [], True, [
         mb.stmt_set_var("Velocidad_Base", 0.65),
-        mb.stmt_set_var("Delta", 0.045),
-        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "HARD"), [mb.stmt_set_var("Velocidad_Base",0.30),mb.stmt_set_var("Delta",0.055)]),
-        mb.stmt_if(mb.op_or(mb.op_eq("$v:Modo_Juego", "CHAOS"),mb.op_eq("$v:Modo_Juego", "NIGHTMARE")), [mb.stmt_set_var("Velocidad_Base",0.23),mb.stmt_set_var("Delta",0.04)]),
-        mb.stmt_set_var("Velocidad_Caida", mb.op_div("$v:Velocidad_Base",mb.op_add(1,mb.op_mul(mb.op_sub("$v:Nivel",1),"$v:Delta")))),
+        mb.stmt_set_var("Velocidad_Factor", 0.045),
+        mb.stmt_if(mb.op_eq("$v:Modo_Juego", "HARD"), [mb.stmt_set_var("Velocidad_Base",0.30),mb.stmt_set_var("Velocidad_Factor",0.055)]),
+        mb.stmt_if(mb.op_or(mb.op_eq("$v:Modo_Juego", "CHAOS"),mb.op_eq("$v:Modo_Juego", "NIGHTMARE")), [mb.stmt_set_var("Velocidad_Base",0.23),mb.stmt_set_var("Velocidad_Factor",0.04)]),
+        mb.stmt_set_var("Velocidad_Caida", mb.op_div("$v:Velocidad_Base",mb.op_add(1,mb.op_mul(mb.op_sub("$v:Nivel",1),"$v:Velocidad_Factor")))),
         mb.stmt_if(mb.op_or(mb.op_eq("$v:Modo_Juego", "CHAOS"),mb.op_eq("$v:Modo_Juego", "NIGHTMARE")), [
             mb.stmt_set_var("Velocidad_Caida",mb.op_div("$v:Velocidad_Caida",mb.op_add(1,mb.op_div("$v:Tiempo_Juego",180)))),
-            mb.stmt_if(mb.op_eq("$v:Evento_Caos","SPEED BURST"),[mb.stmt_set_var("Velocidad_Caida",mb.op_mul("$v:Velocidad_Caida",0.5))])]),
+            mb.stmt_if(mb.op_or(mb.op_eq("$v:Evento_Caos","SPEED BURST"),mb.op_and(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),mb.op_eq("$v:NM_Burst",1))),[mb.stmt_set_var("Velocidad_Caida",mb.op_mul("$v:Velocidad_Caida",0.5))])]),
         mb.stmt_if(mb.op_lt("$v:Velocidad_Caida",0.07),[mb.stmt_set_var("Velocidad_Caida",0.07)])])
 
     mb.define_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["n","x","y"],True,[
@@ -1336,8 +1336,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Count",176,-146],True),
                     mb.stmt_switch_costume("HUD_/"),mb.stmt_goto_xy(188,-146),mb.stmt_pen_stamp(),
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Trial_Goal",216,-146],True)]),
-                mb.stmt_if(mb.op_eq("$v:NM_Event","DOUBLE"),[
-                    mb.stmt_switch_costume("HUD_DOUBLE GARBAGE"),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
+                mb.stmt_if(mb.op_or(mb.op_eq("$v:NM_Event","DOUBLE"),mb.op_eq("$v:NM_Event","TRIPLE")),[
+                    mb.stmt_if_else(mb.op_eq("$v:NM_Event","TRIPLE"),[mb.stmt_switch_costume("HUD_TRIPLE GARBAGE")],[mb.stmt_switch_costume("HUD_DOUBLE GARBAGE")]),mb.stmt_goto_xy(-160,-65),mb.stmt_pen_stamp(),
                     mb.stmt_switch_costume("HUD_ROWS"),mb.stmt_goto_xy(-194,-87),mb.stmt_pen_stamp(),
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Rows",-168,-87],True),
                     mb.stmt_switch_costume("HUD_IN"),mb.stmt_goto_xy(-142,-87),mb.stmt_pen_stamp(),
@@ -1365,6 +1365,8 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Warning",-120,-87],True),
                     mb.stmt_switch_costume("HUD_LINES"),mb.stmt_goto_xy(-180,-108),mb.stmt_pen_stamp(),
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Progress",-140,-108],True)]),
+                mb.stmt_if(mb.op_eq("$v:NM_Burst",1),[mb.stmt_switch_costume("HUD_SPEED BURST"),mb.stmt_goto_xy(160,-105),mb.stmt_pen_stamp()]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Burst",0),mb.op_gt("$v:Tiempo_Juego",mb.op_sub("$v:NM_BurstNext",2))),[mb.stmt_switch_costume("HUD_BURST SOON"),mb.stmt_goto_xy(160,-105),mb.stmt_pen_stamp()]),
                 mb.stmt_if(mb.op_gt("$v:NM_Jam",0),[
                     mb.stmt_switch_costume("HUD_HOLD JAM"),mb.stmt_goto_xy(-178,40),mb.stmt_pen_stamp(),
                     mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:NM_Jam",-127,40],True)]),
@@ -1880,7 +1882,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_set_var("Pausa_Origen", "JUGANDO"),
             mb.stmt_set_var("NM_Event", "NONE"),mb.stmt_set_var("NM_Warning", 0),
             mb.stmt_set_var("NM_Rows",0),mb.stmt_set_var("NM_Progress",0),
-            mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("NM_FX","NONE"),mb.stmt_set_var("NM_FXTime",0),mb.stmt_set_var("Armor_Hit",0),mb.stmt_set_var("Armor_Broken",0),mb.stmt_set_var("Menu_Timer",0),mb.stmt_set_var("Resultado_Timer",0),
+            mb.stmt_set_var("NM_BurstNext",15),mb.stmt_set_var("NM_BurstEnd",0),mb.stmt_set_var("NM_Burst",0),mb.stmt_set_var("NM_Jam",0),mb.stmt_set_var("NM_Cooldown",0),mb.stmt_set_var("NM_Sequence",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0),mb.stmt_set_var("NM_EventStart","NONE"),mb.stmt_set_var("NM_Delayed",0),mb.stmt_set_var("NM_FX","NONE"),mb.stmt_set_var("NM_FXTime",0),mb.stmt_set_var("Armor_Hit",0),mb.stmt_set_var("Armor_Broken",0),mb.stmt_set_var("Menu_Timer",0),mb.stmt_set_var("Resultado_Timer",0),
             mb.stmt_set_var("Trial_Wave",1),mb.stmt_set_var("Trial_Count",0),mb.stmt_set_var("Trial_Event",0),mb.stmt_set_var("Trial_Goal",20),mb.stmt_set_var("Trial_Timer",0),mb.stmt_set_var("Trial_Required",1),mb.stmt_set_var("Trial_Lines",0),mb.stmt_set_var("Trial_LineGoal",0),mb.stmt_set_var("Trial_GlitchDone",0),mb.stmt_set_var("G_Next",60),
             mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_Inner",0),
             mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-45),mb.stmt_set_var("G_TargetX",0),mb.stmt_set_var("G_TargetY",0),mb.stmt_set_var("G_HP",3),
@@ -1975,13 +1977,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_if(mb.op_not(mb.op_eq("$v:G_SoundedPhase","$v:G_Phase")),[
                     mb.stmt_set_var("G_SoundedPhase","$v:G_Phase"),mb.stmt_play_sound("Sonido_GlitchFire")]),
                 mb.stmt_set_var("G_Radius",mb.op_mul(mb.op_sub("$v:G_Inner",0.6),75)),
-                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",0),mb.op_lt(abs_g("$v:G_Y"),6)),[mb.stmt_set_var("G_Hit",1)]),
-                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",1),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_TargetX")),15),mb.op_lt(abs_g(mb.op_sub("$v:G_Y","$v:G_TargetY")),15))),[mb.stmt_set_var("G_Hit",1)]),
-                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",2),mb.op_lt(g_dist("$v:G_X","$v:G_Y"),mb.op_mul("$v:G_Radius","$v:G_Radius"))),[mb.stmt_set_var("G_Hit",1)]),
-                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",3),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),15),mb.op_gt(abs_g("$v:G_Y"),17))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",0),mb.op_lt(abs_g("$v:G_Y"),12)),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",1),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_TargetX")),21),mb.op_lt(abs_g(mb.op_sub("$v:G_Y","$v:G_TargetY")),21))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",2),mb.op_lt(g_dist("$v:G_X","$v:G_Y"),mb.op_mul(mb.op_add("$v:G_Radius",6),mb.op_add("$v:G_Radius",6)))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",3),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),21),mb.op_gt(abs_g("$v:G_Y"),11))),[mb.stmt_set_var("G_Hit",1)]),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",4),mb.op_or(
-                    mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),15),mb.op_lt(abs_g(mb.op_sub("$v:G_Y",25)),15)),
-                    mb.op_and(mb.op_lt(abs_g(mb.op_add("$v:G_X","$v:G_Pos")),15),mb.op_lt(abs_g(mb.op_add("$v:G_Y",25)),15)))),[mb.stmt_set_var("G_Hit",1)])]),
+                    mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),21),mb.op_lt(abs_g(mb.op_sub("$v:G_Y",25)),21)),
+                    mb.op_and(mb.op_lt(abs_g(mb.op_add("$v:G_X","$v:G_Pos")),21),mb.op_lt(abs_g(mb.op_add("$v:G_Y",25)),21)))),[mb.stmt_set_var("G_Hit",1)])]),
             mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Hit",1),mb.op_lt("$v:G_Invuln",0.001)),[
                 mb.stmt_change_var("G_HP",-1),mb.stmt_set_var("G_Invuln",0.45),mb.stmt_play_sound("Sonido_GlitchHit")]),
             mb.stmt_if_else(mb.op_lt("$v:G_HP",1),[
@@ -2027,11 +2029,12 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                             [mb.stmt_set_var("NM_Chain",2),mb.stmt_set_var("NM_Event","JAM_WARNING"),mb.stmt_set_var("NM_Warning",2)])]),
                     mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",180),mb.op_eq(mb.op_mod("$v:NM_Sequence",4),2)),[
                         mb.stmt_set_var("NM_Event","ARMOR_WARNING"),mb.stmt_set_var("NM_Warning",4)]),
+                    mb.stmt_if(mb.op_and(mb.op_gt("$v:Tiempo_Juego",45),mb.op_eq(mb.op_mod("$v:NM_Sequence",6),4)),[mb.stmt_set_var("NM_Event","TRIPLE"),mb.stmt_set_var("NM_Warning",5),mb.stmt_set_var("NM_Rows",3),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1),mb.stmt_set_var("NM_Chain",0)]),
                     mb.stmt_change_var("NM_Sequence",1),mb.stmt_play_sound("Sonido_NMWarning")])])],
-            [mb.stmt_if(mb.op_eq("$v:NM_EventStart","DOUBLE"),[
+            [mb.stmt_if(mb.op_or(mb.op_eq("$v:NM_EventStart","DOUBLE"),mb.op_eq("$v:NM_EventStart","TRIPLE")),[
                 mb.stmt_if(mb.op_eq("$v:NM_Cancelable",1),[
                     mb.stmt_change_var("NM_Progress","$v:Lineas_Turno"),
-                    mb.stmt_repeat(2,[mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Progress",1),mb.op_gt("$v:NM_Rows",0)),[
+                    mb.stmt_repeat(3,[mb.stmt_if(mb.op_and(mb.op_gt("$v:NM_Progress",1),mb.op_gt("$v:NM_Rows",0)),[
                         mb.stmt_change_var("NM_Progress",-2),mb.stmt_change_var("NM_Rows",-1)])])]),
                 mb.stmt_change_var("NM_Warning",-1),
                 mb.stmt_if(mb.op_eq("$v:NM_Warning",0),[
@@ -2086,7 +2089,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     (3,0,6,trial_debt),(3,1,18,trial_debt),
                     (4,0,6,lambda:[mb.stmt_set_var("NM_Event","ARMOR_WARNING"),mb.stmt_set_var("NM_Warning",4)]),
                     (4,1,17,lambda:trial_chain(1)),(4,2,28,lambda:trial_chain(2)),
-                    (5,0,7,trial_double),(5,1,19,lambda:trial_chain(2)),(5,2,30,lambda:trial_chain(1))]
+                    (5,0,7,lambda:[mb.stmt_set_var("NM_Event","TRIPLE"),mb.stmt_set_var("NM_Warning",5),mb.stmt_set_var("NM_Rows",3),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",1)]),(5,1,19,lambda:trial_chain(2)),(5,2,30,lambda:trial_chain(1))]
     mb.define_proc("Trial_OnLock",[],[],True,[
         mb.stmt_change_var("Trial_Count",1),
         mb.stmt_if(mb.op_eq(mb.op_mod("$v:Trial_Count",5),0),nm_cue("OBJECTIVE")),
@@ -2187,7 +2190,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             mb.stmt_change_var("G_Timer","$v:Delta"),
             call("Glitch_Transition"),
             mb.stmt_if(mb.op_and(mb.op_gt("$v:G_Timer",0.3),mb.op_eq("$v:G_Reveal",0)),[mb.stmt_set_var("G_Reveal",1),mb.stmt_broadcast("Actualizar_UI")]),
-            mb.stmt_if(mb.op_gt("$v:G_Timer",0.65),[
+            mb.stmt_if(mb.op_gt("$v:G_Timer",1.4),[
                 mb.stmt_if_else(mb.op_eq("$v:G_Success",1),[mb.stmt_change_var("Puntuacion",100),mb.stmt_play_sound("Sonido_GlitchWin")],
                     [mb.stmt_set_var("NM_Event","DOUBLE"),mb.stmt_set_var("NM_Warning",2),mb.stmt_set_var("NM_Rows",2),mb.stmt_set_var("NM_Progress",0),mb.stmt_set_var("NM_Cancelable",0)]),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Success",1),mb.op_and(mb.op_eq("$v:NM_Submode","TRIALS"),mb.op_eq("$v:Trial_Wave",5))),[mb.stmt_set_var("Trial_GlitchDone",1)]),
@@ -2207,6 +2210,9 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                     mb.stmt_set_var("Proximo_Evento",mb.op_add("$v:Tiempo_Juego",mb.op_mul("$v:Intervalo_Ataque",0.6))),mb.stmt_play_sound("Sonido_Caos")]),
                 mb.stmt_if(mb.op_gt("$v:Tiempo_Juego",mb.op_sub("$v:Proximo_Ataque",2)),[mb.stmt_set_var("Evento_Caos","GARBAGE INCOMING")]),
                 mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:Proximo_Ataque"),[call("Garbage_Attack"),mb.stmt_set_var("Proximo_Ataque",mb.op_add("$v:Tiempo_Juego","$v:Intervalo_Ataque")),mb.stmt_set_var("Evento_Caos","NONE")])]),
+            mb.stmt_if(mb.op_eq("$v:Modo_Juego","NIGHTMARE"),[
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:NM_Burst",1),mb.op_gt("$v:Tiempo_Juego","$v:NM_BurstEnd")),[mb.stmt_set_var("NM_Burst",0)]),
+                mb.stmt_if(mb.op_gt("$v:Tiempo_Juego","$v:NM_BurstNext"),[mb.stmt_set_var("NM_Burst",1),mb.stmt_set_var("NM_BurstEnd",mb.op_add("$v:Tiempo_Juego",5)),mb.stmt_set_var("NM_BurstNext",mb.op_add("$v:Tiempo_Juego",20)),mb.stmt_play_sound("Sonido_Caos")])]),
             call(proc_vel_code),
             mb.stmt_if(mb.op_gt(mb.op_sub("$v:Tiempo_Juego","$v:Reloj_Caida"),"$v:Velocidad_Caida"),[call(proc_step_code,proc_step_args,[0]),mb.stmt_set_var("Reloj_Caida","$v:Tiempo_Juego")]),
             col_below(),mb.stmt_if_else(mb.op_eq("$v:Colision_Detectada",1),[
@@ -2411,7 +2417,7 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
             pb.stmt_goto_xy(0, 6),
             pb.stmt_if_else(
                 pb.op_or(pb.op_or(pb.op_eq("$v:Estado_Juego", "JUGANDO"),pb.op_eq("$v:Estado_Juego", "GLITCH_PLAY")),
-                    pb.op_and(pb.op_eq("$v:G_Reveal",1),pb.op_or(pb.op_eq("$v:Estado_Juego","GLITCH_INTRO"),pb.op_eq("$v:Estado_Juego","GLITCH_RESULT")))),
+                    pb.op_and(pb.op_eq("$v:G_Reveal",1),pb.op_eq("$v:Estado_Juego","GLITCH_INTRO"))),
                 [pb.stmt_hide()],
                 [
                     pb.stmt_show(),

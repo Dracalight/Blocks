@@ -690,6 +690,20 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.vars.update(NM_Event="DOUBLE", NM_Warning=1, NM_Rows=2, NM_Progress=0, Lineas_Turno=2)
     vm.call_proc("Nightmare_OnLock")
     assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 9
+    # Triple: 0, 1, 2 or 3 rows cancelled; the remaining rows materialize once.
+    for lines, rows in [(0,3),(2,2),(4,1),(6,0)]:
+        vm.call_proc("Iniciar_Partida")
+        vm.vars.update(NM_Event="TRIPLE",NM_Warning=2,NM_Rows=3,NM_Progress=0,NM_Cancelable=1,Lineas_Turno=lines)
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Rows"] == rows and vm.vars["NM_Warning"] == 1
+        vm.vars["Lineas_Turno"] = 0
+        vm.call_proc("Nightmare_OnLock")
+        assert vm.vars["NM_Event"] == "NONE" and sum(v == 8 for v in vm.lists["Tablero"]) == 9*rows
+        for row in range(rows):
+            assert vm.lists["Tablero"][190-row*10:200-row*10].count(0) == 1
+        vm.call_proc("Nightmare_OnLock")
+        assert sum(v == 8 for v in vm.lists["Tablero"]) == 9*rows
+    report.append("[PASS] Triple: aviso, cancelación y materialización única de 0–3 filas (intérprete).")
     vm.call_proc("Iniciar_Partida")
     vm.vars.update(Tiempo_Juego=21, Lineas_Turno=0)
     for _ in range(6):
@@ -858,7 +872,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
         (1,0,9,"DOUBLE"),(2,0,5,"JAM_WARNING"),(2,1,17,"JAM_WARNING"),
         (3,0,5,"DEBT"),(3,1,17,"DEBT"),(4,0,5,"ARMOR_WARNING"),
         (4,1,16,"DOUBLE"),(4,2,27,"JAM_WARNING"),
-        (5,0,6,"DOUBLE"),(5,1,18,"JAM_WARNING"),(5,2,29,"DOUBLE")]:
+        (5,0,6,"TRIPLE"),(5,1,18,"JAM_WARNING"),(5,2,29,"DOUBLE")]:
         vm.vars.update(Estado_Juego="JUGANDO",Trial_Wave=wave,Trial_Event=event,Trial_Count=count,
                        Trial_Goal=15+5*wave,Trial_Required=1 if wave==1 else (2 if wave<4 else 3),
                        NM_Event="NONE",NM_Jam=0,NM_Chain=0)
@@ -969,7 +983,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=4.99,G_HP=1,Delta=.05)
     score_before=vm.vars["Puntuacion"]; vm.call_proc("Glitch_Advance")
     assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 1
-    for _ in range(8):
+    for _ in range(16):
         vm.sim_timer += .1; vm.call_proc("Tick")
         if vm.vars["Estado_Juego"] == "JUGANDO": break
     assert vm.vars["Estado_Juego"] == "JUGANDO" and vm.vars["Puntuacion"] == score_before+100
@@ -984,7 +998,7 @@ def run_all_tests(sb3_path: str) -> List[str]:
     vm.call_proc("Glitch_Begin")
     vm.vars.update(Estado_Juego="GLITCH_PLAY",G_Time=.7,G_PrevPhase=0,G_X=0,G_Y=0,G_HP=1,G_Invuln=0,Delta=0)
     vm.call_proc("Glitch_Advance"); assert vm.vars["Estado_Juego"] == "GLITCH_RESULT" and vm.vars["G_Success"] == 0
-    for _ in range(8):
+    for _ in range(16):
         vm.sim_timer += .1; vm.call_proc("Tick")
         if vm.vars["Estado_Juego"] == "JUGANDO": break
     assert (vm.vars["NM_Event"],vm.vars["NM_Rows"],vm.vars["NM_Warning"]) == ("DOUBLE",2,2)
