@@ -33,3 +33,19 @@ Base: `f2fd2d64cb7904c950aa7c83f2ebf1b653eb0015`. PR #2 sigue Draft. Esta entreg
 3. En TRIALS, avanzar hasta CORE y repetir. Registrar vídeo, sistema, dispositivo y cualquier impacto falso o invisible.
 
 No existe todavía un harness gráfico desmontable para acelerar estos casos: la guía puede requerir una espera larga. No marcar DONE ni READY FOR OWNER QA hasta cerrar las verificaciones de R9 y la revisión visual/humana.
+
+## Continuación: límites rectangulares (29 octubre)
+
+Estado: **NO READY FOR OWNER QA / RUNTIME_VISUAL_QA_BLOCKED**. Se comprobó el PR #2 Draft en `e2e2250da01551469803207f1860e7f1137bd5fc` antes de este cambio.
+
+En haz, objetivo, muro y fragmentos, la colisión usa intersección entre el rombo interior de radio 6 del núcleo y los rectángulos visibles de cada ataque. La comprobación de suma de distancias elimina las esquinas cuadradas de la ampliación anterior. El muro considera sus dos segmentos y el hueco; los fragmentos usan 14 px de semiextensión. Se emplean desigualdades estrictas, por lo que un contacto matemático exacto en el borde no cuenta. El borde del trazo del núcleo y el antialiasing no están modelados; el anillo conserva su aproximación circular anterior y no se ha validado gráficamente. Esto no demuestra la causa completa del problema observado por el OWNER ni su resolución visual.
+
+- `test_r9_geometry.py`: seis pruebas de los bloques generados que comprueban CHARGE, límites y esquinas, incluido un punto exterior seguro del anillo. No constituyen una prueba exhaustiva de la circunferencia ni del renderer.
+- Se actualizó `test_glitch_routes.py`, antes basado en la geometría obsoleta. Sus rutas son una simulación idealizada de movimientos por cuadrícula y no demuestran que un jugador humano pueda evitar todos los ataques.
+- `validate_sb3.py`: PASS, 3276 bloques y pruebas lógicas; 16 pruebas Python: PASS. Build duplicado SHA-256 `894d8a9ab1e1d4428f88eb8710eb71a0da294a07ce4691e2ef56aed642a6611f`.
+- `test_r9_runtime.cjs`: PASS para tres filas, Burst, pausa, daño/invulnerabilidad y programación de fallo; VM oficial sin renderer/audio, con estado preparado.
+- Trials con semillas 11/23/37 y límite de 50 fijaciones: política básica termina en GAMEOVER en oleada 1 (18/15/15 fijaciones); heurística sigue jugando en oleada 3 (17/19/15 líneas). No alcanza Core ni valida balance humano.
+- Se intentó abrir el editor oficial `https://scratch.mit.edu/projects/editor/` en Chrome del entorno: el propio editor mostró **Your Browser Does Not Support WebGL**. En el ejecutor no se encontró Chromium, Firefox ni Xvfb instalados. Sin renderer no se comprobaron entrada jugable, audio, capturas ni iPad.
+
+Pendiente sin cambios: reproducción visual del bug original, anillo y límites completos, castigo y victoria visibles en partida, colisiones entre ticks, interacciones completas de Triple/Burst, Trials y Core integrales, harness rápido, comparación controlada CHAOS/NIGHTMARE y selección fundamentada de dos o tres filas. La penalización continúa provisional en dos; no se ha demostrado NIGHTMARE > CHAOS. Conservar guía manual provisional anterior y PR Draft; no presentar esta continuación como cierre R9.
+- `npm test`: PASS, regresiones del planificador oficial y controles simulados, sin renderer ni audio.

@@ -1930,6 +1930,11 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
     # tablero permanece congelado mientras se actualiza este estado.
     abs_g = lambda value: mb.op_math("abs",value)
     g_dist = lambda x,y: mb.op_add(mb.op_mul(x,x),mb.op_mul(y,y))
+    # Intersección de rombo |dx|+|dy|<6 y rectángulo: las dos
+    # proyecciones y la suma evitan los falsos impactos en las esquinas.
+    def g_rect(dx, dy, half_x, half_y):
+        return mb.op_and(mb.op_and(mb.op_lt(abs_g(dx()),half_x+6),mb.op_lt(abs_g(dy()),half_y+6)),
+                         mb.op_lt(mb.op_add(abs_g(dx()),abs_g(dy())),half_x+half_y+6))
     g_stamp = lambda name,x,y: [mb.stmt_switch_costume(name),mb.stmt_goto_xy(x,y),mb.stmt_pen_stamp()]
     mb.define_proc("Glitch_Render",[],[],True,[
         mb.stmt_pen_clear(),mb.stmt_show(),mb.stmt_set_size(100),*g_stamp("G_ARENA",0,0),
@@ -1977,13 +1982,13 @@ def build_project(output_sb3_path: str) -> Dict[str, Any]:
                 mb.stmt_if(mb.op_not(mb.op_eq("$v:G_SoundedPhase","$v:G_Phase")),[
                     mb.stmt_set_var("G_SoundedPhase","$v:G_Phase"),mb.stmt_play_sound("Sonido_GlitchFire")]),
                 mb.stmt_set_var("G_Radius",mb.op_mul(mb.op_sub("$v:G_Inner",0.6),75)),
-                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",0),mb.op_lt(abs_g("$v:G_Y"),12)),[mb.stmt_set_var("G_Hit",1)]),
-                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",1),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_TargetX")),21),mb.op_lt(abs_g(mb.op_sub("$v:G_Y","$v:G_TargetY")),21))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",0),g_rect(lambda:"$v:G_X",lambda:"$v:G_Y",60,6)),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",1),g_rect(lambda:mb.op_sub("$v:G_X","$v:G_TargetX"),lambda:mb.op_sub("$v:G_Y","$v:G_TargetY"),15,15)),[mb.stmt_set_var("G_Hit",1)]),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",2),mb.op_lt(g_dist("$v:G_X","$v:G_Y"),mb.op_mul(mb.op_add("$v:G_Radius",6),mb.op_add("$v:G_Radius",6)))),[mb.stmt_set_var("G_Hit",1)]),
-                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",3),mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),21),mb.op_gt(abs_g("$v:G_Y"),11))),[mb.stmt_set_var("G_Hit",1)]),
+                mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",3),mb.op_or(g_rect(lambda:mb.op_sub("$v:G_X","$v:G_Pos"),lambda:mb.op_sub("$v:G_Y",38.5),14,21.5),g_rect(lambda:mb.op_sub("$v:G_X","$v:G_Pos"),lambda:mb.op_add("$v:G_Y",38.5),14,21.5))),[mb.stmt_set_var("G_Hit",1)]),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",4),mb.op_or(
-                    mb.op_and(mb.op_lt(abs_g(mb.op_sub("$v:G_X","$v:G_Pos")),21),mb.op_lt(abs_g(mb.op_sub("$v:G_Y",25)),21)),
-                    mb.op_and(mb.op_lt(abs_g(mb.op_add("$v:G_X","$v:G_Pos")),21),mb.op_lt(abs_g(mb.op_add("$v:G_Y",25)),21)))),[mb.stmt_set_var("G_Hit",1)])]),
+                    g_rect(lambda:mb.op_sub("$v:G_X","$v:G_Pos"),lambda:mb.op_sub("$v:G_Y",25),14,14),
+                    g_rect(lambda:mb.op_add("$v:G_X","$v:G_Pos"),lambda:mb.op_add("$v:G_Y",25),14,14))),[mb.stmt_set_var("G_Hit",1)])]),
             mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Hit",1),mb.op_lt("$v:G_Invuln",0.001)),[
                 mb.stmt_change_var("G_HP",-1),mb.stmt_set_var("G_Invuln",0.45),mb.stmt_play_sound("Sonido_GlitchHit")]),
             mb.stmt_if_else(mb.op_lt("$v:G_HP",1),[
