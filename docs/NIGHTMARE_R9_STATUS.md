@@ -4,7 +4,7 @@ Continuación desde `a533aff89a91ecac0dfd0f5fe68435cd3e22fffa`. PR #2 Draft; no 
 
 ## Cambios y hallazgos
 
-- Los cuatro ataques rectangulares usan intersección del rombo de radio 6 y sus formas rectangulares; el anillo ahora usa distancia euclídea mínima al rombo y radio exterior 31/30 del radio dibujado, incluyendo el trazo del círculo. Los límites exactos usan desigualdad estricta. El antialiasing y trazo del núcleo no están modelados; el aspecto en Scratch y cualquier limitación del escalado de disfraces requieren renderer.
+- Los cuatro ataques rectangulares usan intersección del rombo de radio 6 y sus formas rectangulares; el anillo ahora usa distancia euclídea mínima al rombo y radio exterior 31/30 del radio dibujado, incluyendo el trazo del círculo. El disfraz del anillo se selecciona antes de escalar y su radio mínimo se fija a 25/12 px, consistente con el mínimo de 5 px que aplica la VM a un disfraz de 72 px. La prueba `test_scratch_size.cjs` comprueba esa regla con la clase oficial y un renderer simulado; no produce píxeles. Los límites exactos usan desigualdad estricta. El antialiasing y trazo del núcleo no están modelados; el aspecto en Scratch y cualquier limitación del escalado de disfraces requieren renderer.
 - El acierto resta 1 HP con invulnerabilidad 0,45 s y sonido. En una traza sin entradas del intérprete los valores fueron 3→2→1→0 y tres llamadas de sonido; el resultado de pérdida indica HP 0 y dos filas en dos fijaciones. El resultado de victoria registra +100 y sonido al entrar en resultado y solo una vez; Core solo se marca completo en victoria. El modal describe el bonus; la actualización gráfica del SCORE se ve al volver al tablero. No se ha reproducido la observación del OWNER visualmente y no se afirma causa raíz completa.
 - La presión de ENDLESS empieza tras 12 s y cinco fijaciones elegibles (antes 20 s y seis); el primer Burst empieza tras 12 s (antes 15). La velocidad base de NIGHTMARE se reduce de 0,23 a 0,18 s; CHAOS permanece en 0,23 s. Se probó también 0,23 bajo el mismo calendario y las mismas semillas. Son parámetros candidatos; la comparación inferior no acredita que NIGHTMARE sea más difícil para humanos. CHAOS no fue modificado.
 - Se conservan dos filas tras el fallo de Glitch. La evidencia comparativa no justifica con confianza tres ni permite evaluar justicia humana. Son no cancelables, dos fijaciones de aviso; el riesgo sigue abierto.
@@ -39,9 +39,9 @@ Los datos anteriores `balance-r9-before.jsonl` y `balance-r9-after.jsonl` son ex
 
 ## Verificación y archivos
 
-- Doble build release SHA-256 `871b0b7a16da4bbd0c394b75fb2204bc415ed5b329406cca2b4c75cc2f34c7c1`; build QA SHA-256 `5cd03e1a4de5aa11cc17066cb8621a03dabc091f2419e51e12db86b1bfc46d76`.
+- Doble build release SHA-256 `198f2d17d9c7d8eef8fdca2fa3d87601cf80ff4dd075e323ef58aa221f8df7b9`; build QA SHA-256 `d01186f27237f6b4bdbc847f2296d0a38d0e506c5a33402a368139c4b40b09c1`.
 - `python tools/validate_sb3.py`: PASS; `python -m unittest discover -s tools/nightmare -p 'test_*.py'`: 25 PASS; `python tools/nightmare/simulate_pressure.py`: PASS en fixture de tablero vacío.
-- `npm test`: PASS, y `python tools/test_sb3.py`: PASS. `node tools/nightmare/test_r9_runtime.cjs`: PASS y `node tools/nightmare/test_qa_fixture.cjs`: PASS, ambos VM oficial sin renderer/audio. Ver instrucciones de reproducción y límites arriba.
+- `npm test`: PASS; `node tools/nightmare/test_scratch_size.cjs`: PASS con renderer simulado. `python tools/test_sb3.py`: PASS tras el ajuste del tamaño mínimo. `node tools/nightmare/test_r9_runtime.cjs`: PASS y `node tools/nightmare/test_qa_fixture.cjs`: PASS, ambos VM oficial sin renderer/audio. Ver instrucciones de reproducción y límites arriba.
 - Pendiente: pruebas de renderer y gameplay real, causa original observada, revisión visual de anillo/trazos, cobertura exhaustiva de combinaciones de amenazas y balance suficiente. Este documento no declara DONE ni READY FOR OWNER QA.
 
 ### Ensayo aislado de velocidad

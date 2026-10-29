@@ -66,8 +66,8 @@ class GlitchEdges(unittest.TestCase):
         # Minimum Euclidean distance to the four sides of the drawn diamond.
         vertices = [(6,0),(0,6),(-6,0),(0,-6)]
         vm = Scratch3VMInterpreter(self.project)
-        for inner in (.7, .8, .95):
-            radius = (inner-.6)*75*31/30
+        for inner in (.601, .62, .7, .8, .95):
+            radius = max((inner-.6)*75,25/12)*31/30
             for x in range(-30,31,5):
                 for y in range(-30,31,5):
                     distances=[]

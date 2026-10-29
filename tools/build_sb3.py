@@ -1943,7 +1943,7 @@ def build_project(output_sb3_path: str, qa_mode: bool = False) -> Dict[str, Any]
             mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_BEAM_WARN",0,0),g_stamp("G_BEAM_FIRE",0,0))]),
         mb.stmt_if(mb.op_eq("$v:G_Phase",1),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_TARGET","$v:G_TargetX","$v:G_TargetY"),g_stamp("G_TARGET_FIRE","$v:G_TargetX","$v:G_TargetY"))]),
         mb.stmt_if(mb.op_eq("$v:G_Phase",2),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_RING_WARN",0,0),
-            [mb.stmt_set_size(mb.op_mul(mb.op_div("$v:G_Radius",30),100)),*g_stamp("G_RING",0,0),mb.stmt_set_size(100)])]),
+            [mb.stmt_switch_costume("G_RING"),mb.stmt_set_size(mb.op_mul(mb.op_div("$v:G_Radius",30),100)),mb.stmt_goto_xy(0,0),mb.stmt_pen_stamp(),mb.stmt_set_size(100)])]),
         mb.stmt_if(mb.op_eq("$v:G_Phase",3),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),g_stamp("G_WALL_WARN","$v:G_Pos",0),g_stamp("G_WALL","$v:G_Pos",0))]),
         mb.stmt_if(mb.op_eq("$v:G_Phase",4),[mb.stmt_if_else(mb.op_eq("$v:G_Active",0),
             g_stamp("G_FRAGMENT","$v:G_Pos",25)+g_stamp("G_FRAGMENT",mb.op_sub(0,"$v:G_Pos"),-25),
@@ -1983,6 +1983,9 @@ def build_project(output_sb3_path: str, qa_mode: bool = False) -> Dict[str, Any]
                 mb.stmt_if(mb.op_not(mb.op_eq("$v:G_SoundedPhase","$v:G_Phase")),[
                     mb.stmt_set_var("G_SoundedPhase","$v:G_Phase"),mb.stmt_play_sound("Sonido_GlitchFire")]),
                 mb.stmt_set_var("G_Radius",mb.op_mul(mb.op_sub("$v:G_Inner",0.6),75)),
+                # Scratch clamps a 72px costume to at least 5px. Keep the
+                # collision circle aligned with that minimum rendered scale.
+                mb.stmt_if(mb.op_lt("$v:G_Radius",25/12),[mb.stmt_set_var("G_Radius",25/12)]),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",0),g_rect(lambda:"$v:G_X",lambda:"$v:G_Y",60,6)),[mb.stmt_set_var("G_Hit",1)]),
                 mb.stmt_if(mb.op_and(mb.op_eq("$v:G_Phase",1),g_rect(lambda:mb.op_sub("$v:G_X","$v:G_TargetX"),lambda:mb.op_sub("$v:G_Y","$v:G_TargetY"),15,15)),[mb.stmt_set_var("G_Hit",1)]),
                 # Distancia mínima del centro al rombo del núcleo. El círculo
