@@ -1,0 +1,11 @@
+# NIGHTMARE: simulación de tablero persistente
+
+`python tools/nightmare/simulate_board.py --limit 160` ejecuta tres semillas por política. Las piezas, rotación, desplazamiento, colisión, hard drop, fijación, limpieza, basura, blindaje y eventos se ejecutan mediante el intérprete AST del SB3. Una heurística Python elige entre movimientos legales sin kicks a la altura de aparición. El tablero se conserva entre fijaciones; no se insertan limpiezas. El bot intenta Hold cada siete piezas. El reloj de juego se incrementa artificialmente 3 s por fijación; Glitch se ejecuta sin mover el núcleo. Esto **no** es el planificador oficial, una partida renderizada ni un jugador humano. No modela latencia, decisiones humanas, gravedad ni todos los movimientos posibles.
+
+Los JSONL de `evidence/board-before.jsonl` y `evidence/board-after.jsonl` contienen semillas y resultados completos. La política básica llegó a 21, 13 y 16 fijaciones antes de Game Over. La heurística posterior al ajuste llegó a 150, 160 y 117 fijaciones; las líneas fueron 61, 74 y 44. En esas tres ejecuciones se programaron cadenas y blindaje y hubo fijaciones bajo Hold Jam. Los conteos de basura son cotas inferiores; la política y el horizonte influyen en los resultados. No se simularon aquí Trials, victoria de Core ni una política adversarial completa con tableros persistentes; las regresiones de esos sistemas usan fixtures separados.
+
+## Ajuste con evidencia
+
+Con la posición inicial anterior del núcleo (0, −45), un bot sin entradas superó 23 de 23 Glitch observados en los tres recorridos heurísticos. En la nueva posición inicial (0, −35), sin cambiar avisos, colisiones ni duración, el mismo bot perdió los 20 Glitch observados en los recorridos posteriores. El intérprete también verifica una ruta activa de supervivencia desde la nueva posición. Esto corrige una estrategia trivial observada; no demuestra que todos los ataques sean justos con latencia real ni define una tasa de éxito humana.
+
+No se alteraron los demás parámetros de balance: la muestra no justifica ajustar tiempos, filas ni duración de amenazas. Speed Burst de Chaos permanece y se cubre con la prueba del planificador. La calidad del balance sigue pendiente de partidas humanas en iPad.
