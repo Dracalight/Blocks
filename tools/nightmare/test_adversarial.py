@@ -102,6 +102,16 @@ class Adversarial(unittest.TestCase):
         self.assertEqual(v.vars['Puntuacion'],before+100)
         self.assertEqual(v.sounds_played.count('Sonido_GlitchWin'),1)
 
+    def test_result_transition_draws_updated_score_only_on_success(self):
+        v=self.vm
+        v.vars.update(Estado_Juego='GLITCH_RESULT',G_Success=1,G_Timer=.1,Puntuacion=1234)
+        v.call_proc('Glitch_Transition')
+        digits=[name for _,_,name in v.stamps_log if str(name).startswith('HUD_')]
+        self.assertEqual(digits,['HUD_4','HUD_3','HUD_2','HUD_1'])  # right to left
+        v.vars['G_Success']=0
+        v.call_proc('Glitch_Transition')
+        self.assertFalse(any(str(name).startswith('HUD_') for _,_,name in v.stamps_log))
+
     def test_damaged_full_armor_resolves_without_hole(self):
         v=self.vm;v.lists['Tablero'][-20:]=[9]*20
         v.call_proc('Revisar_Y_Eliminar_Lineas')

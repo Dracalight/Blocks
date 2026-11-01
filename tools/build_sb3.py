@@ -1962,7 +1962,12 @@ def build_project(output_sb3_path: str, qa_mode: bool = False) -> Dict[str, Any]
                 [mb.stmt_set_var("G_VisualScale",mb.op_sub(100,mb.op_mul("$v:G_Timer",60)))])]),
         mb.stmt_set_size("$v:G_VisualScale"),*g_stamp("G_ARENA",0,0),
         *g_stamp("G_CORE",mb.op_mul("$v:G_X",mb.op_div("$v:G_VisualScale",100)),mb.op_mul("$v:G_Y",mb.op_div("$v:G_VisualScale",100))),
-        mb.stmt_set_size(100),mb.stmt_hide()])
+        mb.stmt_set_size(100),
+        # Keep the updated SCORE visible beside the result modal immediately;
+        # the normal board HUD is not drawn during this transition.
+        mb.stmt_if(mb.op_and(mb.op_eq("$v:Estado_Juego","GLITCH_RESULT"),mb.op_eq("$v:G_Success",1)),[
+            mb.stmt_call_proc("Dibujar_Numero %s %s %s",["hud_n","hud_x","hud_y"],["$v:Puntuacion",-140,0],True)]),
+        mb.stmt_hide()])
     mb.define_proc("Glitch_Begin",[],[],True,[
         mb.stmt_set_var("Estado_Juego","GLITCH_INTRO"),mb.stmt_set_var("G_Timer",0),mb.stmt_set_var("G_Time",0),
         mb.stmt_set_var("G_Phase",0),mb.stmt_set_var("G_PrevPhase",-1),mb.stmt_set_var("G_X",0),mb.stmt_set_var("G_Y",-35),

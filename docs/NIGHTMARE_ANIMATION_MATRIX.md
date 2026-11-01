@@ -22,3 +22,7 @@ Una fila «implementada» indica código conectado, no calidad visual verificada
 ## Revisión R9 posterior a `a533aff`
 
 La victoria de Glitch ahora asigna el bonus y solicita el sonido al entrar en resultado; la pérdida indica HP 0 en el modal. En el intérprete se verifican los eventos de sonido, el cambio de estado y la asignación única. **No se ha observado la animación, el sonido ni el HUD con renderer**; las filas visuales de esta matriz siguen pendientes de QA real. El acceso rápido está documentado en `NIGHTMARE_R9_QUICK_QA.md` y solo existe en una build separada de desarrollo.
+
+Continuación 2026-11-01: la transición de victoria también solicita dibujar el
+SCORE actualizado en el lateral. Su visibilidad, legibilidad y ausencia de
+solapamiento con el modal siguen pendientes de ejecución con renderer.

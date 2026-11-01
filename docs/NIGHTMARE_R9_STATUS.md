@@ -1,11 +1,27 @@
 # NIGHTMARE R9 — NO READY FOR OWNER QA
 
+## Continuación 2026-11-01: SCORE en resultado
+
+Tras una victoria en Glitch, la transición de resultado ahora solicita dibujar
+el SCORE actualizado en su posición habitual, mientras el modal anuncia +100.
+Una prueba del intérprete comprueba los dígitos emitidos para una victoria y su
+ausencia en una derrota; no comprueba píxeles, superposición ni legibilidad.
+La actualización real de pantalla y audio, la reproducción de la incidencia del
+OWNER, las interacciones integrales y el balance humano siguen pendientes. No
+hay evidencia nueva para afirmar que NIGHTMARE sea más difícil que CHAOS.
+
+Las builds regeneradas son distintas y reproducibles: jugador SHA-256
+`d15a78aab3668b836180c44829e4cb8128c584e534d1121549fe328ba7b5aded`;
+QA-ONLY SHA-256 `44d169ce1d97d37ca1c26df0b0479d8584792fcf55bd9e3f77687ac099e27bf5`.
+La suite Python contiene ahora 26 pruebas. La revisión visual del nuevo SCORE
+debe confirmar legibilidad y ausencia de solapamiento con el modal.
+
 Continuación desde `a533aff89a91ecac0dfd0f5fe68435cd3e22fffa`. PR #2 Draft; no fusionar. **RUNTIME_VISUAL_QA_BLOCKED**: el editor oficial en el navegador disponible mostró `Your Browser Does Not Support WebGL`; el ejecutor no tiene Chromium, Firefox ni Xvfb. Hay bibliotecas EGL, pero no un navegador o instalación de renderer ejecutable. No se comprobó audio, controles humanos, iPad ni imágenes del juego. La VM oficial usada abajo no incluye renderer/audio.
 
 ## Cambios y hallazgos
 
 - Los cuatro ataques rectangulares usan intersección del rombo de radio 6 y sus formas rectangulares; el anillo ahora usa distancia euclídea mínima al rombo y radio exterior 31/30 del radio dibujado, incluyendo el trazo del círculo. El disfraz del anillo se selecciona antes de escalar y su radio mínimo se fija a 25/12 px, consistente con el mínimo de 5 px que aplica la VM a un disfraz de 72 px. La prueba `test_scratch_size.cjs` comprueba esa regla con la clase oficial y un renderer simulado; no produce píxeles. Los límites exactos usan desigualdad estricta. El antialiasing y trazo del núcleo no están modelados; el aspecto en Scratch y cualquier limitación del escalado de disfraces requieren renderer.
-- El acierto resta 1 HP con invulnerabilidad 0,45 s y sonido. En una traza sin entradas del intérprete los valores fueron 3→2→1→0 y tres llamadas de sonido; el resultado de pérdida indica HP 0 y dos filas en dos fijaciones. El resultado de victoria registra +100 y sonido al entrar en resultado y solo una vez; Core solo se marca completo en victoria. El modal describe el bonus; la actualización gráfica del SCORE se ve al volver al tablero. No se ha reproducido la observación del OWNER visualmente y no se afirma causa raíz completa.
+- El acierto resta 1 HP con invulnerabilidad 0,45 s y sonido. En una traza sin entradas del intérprete los valores fueron 3→2→1→0 y tres llamadas de sonido; el resultado de pérdida indica HP 0 y dos filas en dos fijaciones. El resultado de victoria registra +100 y sonido al entrar en resultado y solo una vez; Core solo se marca completo en victoria. El modal describe el bonus y la transición solicita dibujar el SCORE actualizado; su aspecto aún no se ha verificado. No se ha reproducido la observación del OWNER visualmente y no se afirma causa raíz completa.
 - La presión de ENDLESS empieza tras 12 s y cinco fijaciones elegibles (antes 20 s y seis); el primer Burst empieza tras 12 s (antes 15). La velocidad base de NIGHTMARE se reduce de 0,23 a 0,18 s; CHAOS permanece en 0,23 s. Se probó también 0,23 bajo el mismo calendario y las mismas semillas. Son parámetros candidatos; la comparación inferior no acredita que NIGHTMARE sea más difícil para humanos. CHAOS no fue modificado.
 - Se conservan dos filas tras el fallo de Glitch. La evidencia comparativa no justifica con confianza tres ni permite evaluar justicia humana. Son no cancelables, dos fijaciones de aviso; el riesgo sigue abierto.
 - Se incorporó build QA independiente y una [guía concreta](NIGHTMARE_R9_QUICK_QA.md); 5 Glitch, 6 Triple, 7 Burst solo en la build QA. La prueba de aislamiento inspecciona el proyecto normal y la build QA; el proyecto normal no incorpora esos atajos.
