@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "scratchVm": "5.0.300",
+  "scratchStorage": "4.0.0",
+  "targets": 9,
+  "scenarios": [
+    "load",
+    "assets",
+    "start",
+    "movement",
+    "camera-coordinates",
+    "jump",
+    "landing",
+    "elevated-platform-landing",
+    "pause",
+    "resume",
+    "death",
+    "restart",
+    "six-spike-playthrough",
+    "complete",
+    "practice-checkpoint",
+    "practice-pause-resume"
+  ],
+  "completedDistance": 2501.333333333338,
+  "completionAttempts": 2,
+  "practiceResetDistance": 980,
+  "runtimeErrors": 0,
+  "rendering": "headless; no renderer attached",
+  "turboWarp": "unverified",
+  "ipadTouch": "unverified",
+  "elapsedWallMs": 23735
+}

@@ -1,0 +1,17 @@
+{
+  "name": "nexus-geometry-dash-subzero-r2",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Native Scratch 3 R2 runtime prototype and validators for an original SubZero-inspired acceptance lane.",
+  "scripts": {
+    "build": "python tools/build.py",
+    "test:structure": "python -m unittest discover -s tests -v",
+    "test:vm": "node tests/vm_e2e.js",
+    "test": "npm run build && npm run test:structure && npm run test:vm && npm run test:rate",
+    "test:rate": "node tests/vm_rate_parity.js"
+  },
+  "devDependencies": {
+    "scratch-storage": "4.0.0",
+    "scratch-vm": "5.0.300"
+  }
+}

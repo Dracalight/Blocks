@@ -1,23 +1,44 @@
-# NEXUS Geometry Dash: SubZero rebuild V1
+# NEXUS Geometry Dash — SubZero rebuild R2
 
-An original Scratch 3 rebuild project. This first published increment is an **ENGINE_READY prototype**, not a completed SubZero recreation. It contains a native `.sb3` with original vector art and Scratch blocks for a simple auto-scrolling obstacle interaction. No commercial music, extracted game assets, or proprietary source are included.
-
-## Build
-
-Requires Python 3.10+ and uses only the standard library:
-
-```sh
-python tools/build.py
-python -m unittest discover -s tests -v
-```
-
-The output is `dist/Geometry-Dash-SubZero-NEXUS-V1.sb3`. The project is playable as a small jump-and-obstacle prototype; level sequencing and full feature coverage are pending. Open the `.sb3` in Scratch or TurboWarp to inspect/run it. The repository does not claim Scratch VM/TurboWarp compatibility validation until those players are exercised.
+R2 turns the R1 packaging sample into a Scratch 3 project with a native-block runtime and an original acceptance lane. The lane is **not Press Start** and contains no copied Geometry Dash art, level layout, code, fonts, or soundtrack.
 
 ## Current status
 
-- M1 architecture and licensing boundaries: documented in `docs/`.
-- M2 native `.sb3` prototype: generated; structural tests are supplied.
-- Press Start, Nock Em, Power Trip parity and complete playable levels: pending.
-- Device QA, latency, frame-time, and 30/60 FPS equivalence: pending.
+**ENGINE_READY for the original R2 acceptance lane.** The `.sb3` loads in Scratch VM 5.0.300 and the automated VM scenario starts, runs, jumps, lands, pauses, resumes, collides, dies, restarts, uses practice checkpoint recovery, and completes the six-spike test lane. This does not mean any SubZero level is implemented.
 
-This branch is intentionally separate from the previous game files. Its first commit is anchored to the repository's existing history because the connected GitHub interface only creates commits with a parent; the branch tree itself contains only this new project.
+- Scratch VM import and headless gameplay: tested.
+- TurboWarp editor/rendering: not yet verified (`TURBOWARP_RUNTIME_UNVERIFIED`).
+- Native visual rendering, browser screenshot, iPad/Safari touch, and physical PC QA: pending.
+- FPS/frame-time and p95/p99: not measured. 30/60 VM cadence parity is a functional simulation check, not a performance benchmark.
+- The six-spike collision profile and movement parameters are original provisional values, not measured Geometry Dash values.
+
+## Build and test
+
+Requires Python 3.10+ and Node.js. Runtime validator versions are pinned in `package-lock.json`.
+
+```sh
+npm ci
+npm test
+```
+
+`npm test` rebuilds `dist/Geometry-Dash-SubZero-NEXUS-V1.sb3`, validates its ZIP/project graph, loads and plays it through Scratch VM, then compares normalized speed in Scratch VM 30-FPS compatibility and default cadence. Python only generates/inspects the archive and runs auxiliary checks. Game physics and state transitions are Scratch blocks inside the `.sb3`.
+
+## Controls
+
+- Space or Up Arrow: start, jump, or restart from the menu/death/completion state.
+- Stage click: start or jump; this is the intended basic touch adaptation, not iPad validation.
+- P: pause/resume while preserving normal or practice mode.
+- R: restart a dead or completed run.
+- V: start practice mode from the menu.
+
+The jump uses press events and is not buffered in midair. The game samples keyboard events at the effective Scratch VM event cadence.
+
+## Source layout
+
+- `tools/build.py`: deterministic native `.sb3` builder.
+- `engine/physics/parameters.json`: provisional units, timestep, clamp, and hit tolerances.
+- `levels/runtime_acceptance/level.json`: data for the original acceptance lane.
+- `tests/`: structural archive checks and Scratch VM E2E/cadence tests.
+- `docs/` and `reports/`: architecture, limitations, and evidence.
+
+Recreating Press Start, Nock Em, and Power Trip remains future work. This branch is a runtime foundation only.
