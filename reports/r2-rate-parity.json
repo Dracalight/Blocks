@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "test": "Scratch VM 30/60 cadence parity",
+  "toleranceUnitsPerSecond": 12,
+  "thirty": {
+    "mode": "30fps-compatible",
+    "elapsed": 0.996,
+    "distance": 178.5,
+    "speed": 179.21686746987953,
+    "y": -62,
+    "state": "PLAYING"
+  },
+  "sixty": {
+    "mode": "default",
+    "elapsed": 0.9990000000000001,
+    "distance": 180,
+    "speed": 180.18018018018017,
+    "y": -62,
+    "state": "PLAYING"
+  },
+  "speedDifferenceUnitsPerSecond": 0.9633127103006416,
+  "fpsMeasured": false
+}

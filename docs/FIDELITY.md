@@ -1,3 +1,5 @@
-# Fidelity and known differences
+# Fidelity and scope — R2
 
-The increment does not claim level parity or 1:1 fidelity. No reference values have been measured. Original abstract vector graphics replace protected visuals. The original soundtrack is omitted; audio synchronization is not implemented. The current movement loop is render-rate dependent, has only basic cube-like jumping, and includes only one repeating obstacle. Menus, practice checkpoints, progress UI, mode portals, multiple modes, camera choreography, and complete endings are pending.
+R2 is an original engine-acceptance lane, not a SubZero level and not a 1:1 recreation. It contains a cube-like player, six original spike intervals, one platform, one speed increase, practice rewind, and a finish transition. It omits the three reference level layouts, all additional game modes/portals, music/audio events, background/effect choreography, level-specific pacing, icon selector, full UI, and secret coins.
+
+All graphics are original vector art. No source game assets or commercial music are bundled. No reference timing/physics values are claimed or measured in R2.

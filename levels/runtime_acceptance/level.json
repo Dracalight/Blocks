@@ -1,0 +1,52 @@
+{
+  "schema": "nexus.level.v1",
+  "id": "runtime-acceptance-original",
+  "display_name": "NEXUS Test Lane",
+  "status": "original engine acceptance section; not a SubZero level",
+  "objects": [
+    {
+      "id": "spike-01",
+      "type": "spike",
+      "world_x": 320
+    },
+    {
+      "id": "spike-02",
+      "type": "spike",
+      "world_x": 650
+    },
+    {
+      "id": "spike-03",
+      "type": "spike",
+      "world_x": 1040
+    },
+    {
+      "id": "spike-04",
+      "type": "spike",
+      "world_x": 1390
+    },
+    {
+      "id": "spike-05",
+      "type": "spike",
+      "world_x": 1770
+    },
+    {
+      "id": "spike-06",
+      "type": "spike",
+      "world_x": 2170
+    },
+    {
+      "id": "platform-01",
+      "type": "platform",
+      "start_distance": 800,
+      "end_distance": 980,
+      "top_y": 19,
+      "visual_center_y": 7,
+      "width": 180
+    },
+    {
+      "id": "finish",
+      "type": "goal",
+      "world_distance": 2500
+    }
+  ]
+}
