@@ -81,6 +81,15 @@ def make_project():
     blocks[hmove]['next']=respif;blocks[respif]['next']=touchif
     blocks[hforever]['inputs']={'SUBSTACK':[2,b('control_if',inputs={'CONDITION':[2,hstate],'SUBSTACK':[2,hmove]})]}
     chain(hids)
+    # Normalize Scratch parent links for every nested block, including reporters and substacks.
+    for owner_id, owner in blocks.items():
+        for value in owner.get('inputs', {}).values():
+            if isinstance(value, list) and len(value) >= 2 and value[0] in (2, 3):
+                child_id = value[1]
+                if isinstance(child_id, str) and child_id in blocks:
+                    blocks[child_id]['parent'] = owner_id
+                if len(value) >= 3 and isinstance(value[2], str) and value[2] in blocks:
+                    blocks[value[2]]['parent'] = owner_id
     # Variables
     vars={'state':['state','menu'],'vy':['vy',0],'distance':['distance',0]}
     return {'targets':[{'isStage':True,'name':'Stage','variables':vars,'lists':{},'broadcasts':{},'blocks':{},'comments':{},'currentCostume':0,'costumes':[{'name':'night-grid','bitmapResolution':1,'dataFormat':'svg','assetId':md5(backdrop),'md5ext':md5(backdrop)+'.svg','rotationCenterX':240,'rotationCenterY':180}],'sounds':[],'volume':100,'layerOrder':0,'tempo':60,'videoTransparency':50,'videoState':'on','textToSpeechLanguage':None},
