@@ -1,11 +1,12 @@
 import {Chess} from './chess.js'
 import {search,cancel} from './engine.js'
 import {analyze,project,value} from './analyzer.js'
-const $=id=>document.getElementById(id), ids=['side','mode','profile','ms','depth','hash','theme']
+const $=id=>document.getElementById(id), ids=['side','mode','profile','ms','depth','hash','theme','provider','threads','intensity']
+let elapsed={w:0,b:0},tick=Date.now()
 let game=new Chess(), rows=[], end='', selected='', busy=false, epoch=0, side='w', pending=null
 const glyph={p:'♟',r:'♜',n:'♞',b:'♝',q:'♛',k:'♚'}
-function save(){try{localStorage.setItem('nexus1',JSON.stringify({pgn:game.pgn(),end,side,rows,pending,settings:Object.fromEntries(ids.map(id=>[id,$(id).value]))}))}catch{$('speech').textContent='Almacenamiento local lleno.'}}
-try{const s=JSON.parse(localStorage.nexus1);game.loadPgn(s.pgn);({rows,end,side,pending}=s);for(const id of ids)$(id).value=s.settings[id]}catch{}
+function save(){try{localStorage.setItem('nexus1',JSON.stringify({pgn:game.pgn(),elapsed,end,side,rows,pending,settings:Object.fromEntries(ids.map(id=>[id,$(id).value]))}))}catch{$('speech').textContent='Almacenamiento local lleno.'}}
+try{const s=JSON.parse(localStorage.nexus1);game.loadPgn(s.pgn);elapsed=s.elapsed||elapsed;({rows,end,side,pending}=s);for(const id of ids)$(id).value=s.settings[id]}catch{}
 function terminal(){return end||(game.isCheckmate()?'Jaque mate':game.isStalemate()?'Ahogado':game.isDraw()?'Tablas':'')}
 function paint(){
  const squares=game.board().flatMap((rank,i)=>rank.map((piece,j)=>({piece,s:String.fromCharCode(97+j)+(8-i),dark:(i+j)%2})))
@@ -19,7 +20,12 @@ function paint(){
  $('status').textContent=terminal()||(busy?'Nexus está pensando…':game.isCheck()?'Tu rey está en jaque':'Tu turno')
  $('cat').classList.toggle('thinking',busy)
  $('history').textContent=game.history().map((m,i)=>(i%2?'':Math.floor(i/2+1)+'. ')+m).join(' ')||'Sin movimientos'
- const r=rows.at(-1);$('review').textContent=rows.map(r=>r.move+' · '+r.category).join(' / ')
+ const captured=game.history({verbose:true}).filter(m=>m.captured).map(m=>glyph[m.captured]).join(' ')
+ $('taken').textContent=captured?'Capturas · '+captured:''
+ const r=rows.at(-1);
+ const mood=busy?'thinking':terminal()?(game.isCheckmate()?(game.turn()===side?'victory':'defeat'):'sad'):({BRILLIANT:'brilliant',BLUNDER:'surprise',MISTAKE:'confused',GREAT:'smile',MISSED_OPPORTUNITY:'sad'}[r?.category]||($('mode').value==='Proyectada atómica'?'atomic':'neutral'))
+ $('cat').dataset.mood=mood
+ $('review').textContent=rows.map(r=>r.move+' · '+r.category).join(' / ')
  $('score').textContent=r?'Evaluación tras '+r.move+' · '+(r.current/100).toFixed(2):''
  const colors={'Sakura':['#f1cfdb','#ac7a94'],'Midnight':['#acbbcf','#505a7c'],'Oscuro':['#989598','#59545a'],'Clásico':['#e6d5af','#9a805e'],'Broken Gambit':['#d8c7b7','#91717c']}[$('theme').value]
  if(colors){document.body.style.setProperty('--a',colors[0]);document.body.style.setProperty('--b',colors[1])}
@@ -38,14 +44,15 @@ const number=(id,min,max)=>Math.min(max,Math.max(min,Math.floor(Number($(id).val
 async function run(){
  const token=++epoch;cancel();busy=Boolean(pending||!terminal()&&game.turn()!==side);$('retry').hidden=true;paint()
  if(!busy)return
- const opts={ms:number('ms',100,30000),depth:number('depth',1,99),hash:number('hash',1,128),full:$('profile').value==='Mittens Killer'}
+ const opts={ms:number('ms',100,30000),depth:number('depth',1,99),hash:number('hash',1,128),threads:number('threads',1,Math.min(16,navigator.hardwareConcurrency||1)),full:$('profile').value==='Mittens Killer'}
  try{
  let after
  if(pending){
  const before=await search(pending.previous,opts);if(token!==epoch)return
  after=terminal()?null:await search(position(),opts);if(token!==epoch)return
  const r=analyze(pending.move,before,after,pending.legal,game);r.fen=pending.move.before;rows.push(r);pending=null
- $('speech').textContent=project(r,$('mode').value,rows.length);save()
+ $('speech').textContent=project(r,$('mode').value,rows.length,Number($('intensity').value));save()
+ if($('provider').value==='Proveedor configurado'&&$('speech').textContent){fetch('./api/projection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({evento:r,modo:$('mode').value,reciente:rows.slice(-3).map(x=>x.move)}),signal:AbortSignal.timeout(9000)}).then(res=>res.json()).then(({phrase})=>{if(epoch===token&&typeof phrase==='string'&&phrase.trim())$('speech').textContent=phrase.slice(0,280)}).catch(()=>{})}
  }
  if(!terminal()&&game.turn()!==side){after??=await search(position(),opts);if(token!==epoch)return
  const m=game.moves({verbose:true}).find(x=>x.lan===after.best);if(!m)throw Error('Respuesta UCI ilegal')
@@ -53,7 +60,7 @@ async function run(){
  }catch(e){if(token===epoch){$('speech').textContent=e.message+'. Puedes elegir Móvil y reintentar.';$('retry').hidden=false}}
  finally{if(token===epoch){busy=false;paint()}}
 }
-function reset(g){epoch++;cancel();game=g;pending=null;rows=[];end='';selected='';side=$('side').value;$('speech').textContent='Otra posición. Otra posibilidad.';save();run()}
+function reset(g){elapsed={w:0,b:0};tick=Date.now();epoch++;cancel();game=g;pending=null;rows=[];end='';selected='';side=$('side').value;$('speech').textContent='Otra posición. Otra posibilidad.';save();run()}
 $('fresh').onclick=()=>reset(new Chess());$('retry').onclick=run
 for(const [id,msg] of [['resign','Rendición'],['draw','Tablas acordadas']])$(id).onclick=()=>{if(terminal())return;epoch++;cancel();pending=null;busy=false;end=msg;game.setHeader('Result',id==='draw'?'1/2-1/2':side==='w'?'0-1':'1-0');save();paint()}
 $('fen').onclick=()=>$('notation').value=game.fen();$('pgn').onclick=()=>$('notation').value=game.pgn()
@@ -80,3 +87,5 @@ $('inspect').onclick=()=>{$('ply').max=game.history().length;$('ply').value=$('p
 $('closeReview').onclick=()=>$('viewer').close()
 $('ply').oninput=()=>{branchStep=0;showReview()}
 $('variation').onclick=()=>{const m=game.history({verbose:true})[Number($('ply').value)-1],row=rows.find(r=>r.fen===m.before);branchStep=(branchStep+1)%(row.line.length+1);showReview()}
+
+setInterval(()=>{const now=Date.now();if(!terminal()&&!document.hidden)elapsed[game.turn()]+=Math.min(1500,now-tick);tick=now;const fmt=t=>new Date(t).toISOString().slice(11,19);$('clocks').textContent='Blancas '+fmt(elapsed.w)+' · Negras '+fmt(elapsed.b)},500)

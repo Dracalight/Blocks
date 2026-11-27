@@ -1,0 +1,1 @@
+{'engineMs': 1022.6000000000931, 'framesPerSecond': 56.718169372183375, 'dialogueMs': 0.0025, 'clickToNextFrameMs': 8.199999999953434, 'mainHeapBytes': 1749875}

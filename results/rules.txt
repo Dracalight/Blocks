@@ -1,0 +1,19 @@
+
+> nexus@1.0.0 test
+> node --test tests/rules.js
+
+✔ legalidad, jaque y mate (6.081339ms)
+✔ enroque (1.937212ms)
+✔ al paso (2.193915ms)
+✔ cuatro promociones (2.204591ms)
+✔ ahogado, material y 50 movimientos (1.005917ms)
+✔ repetición y persistencia PGN (5.738169ms)
+✔ error táctico y comentario contextual (6.326895ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84.932287

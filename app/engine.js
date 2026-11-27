@@ -8,7 +8,8 @@ export function cancel(){
 export function search(position,opts){
   cancel()
   return new Promise((resolve,reject)=>{
-    const name=opts.full?'stockfish-19-single':'stockfish-19-lite-single'
+    const multi=opts.full&&globalThis.crossOriginIsolated&&opts.threads>1
+    const name=opts.full?(multi?'stockfish-19':'stockfish-19-single'):'stockfish-19-lite-single'
     const active=new Worker('./engine/'+name+'.js')
     worker=active
     const pv={}
@@ -20,6 +21,7 @@ export function search(position,opts){
     active.onmessage=({data})=>{
       const send=line=>active.postMessage(line)
       if(data==='uciok'){
+        if(multi)send('setoption name Threads value '+opts.threads)
         send('setoption name Hash value '+opts.hash)
         send('setoption name MultiPV value 2')
         send('isready')

@@ -1,3 +1,4 @@
 node_modules/
 app/engine/stockfish-19-single.*
 __pycache__/
+app/engine/stockfish-19.*

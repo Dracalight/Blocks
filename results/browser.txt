@@ -1,0 +1,2 @@
+Worker: 1. e4 e5 e4 · BEST
+Offline: 1. d4 Nf6
