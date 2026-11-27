@@ -1,0 +1,26 @@
+{
+  "name": "nexus",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test tests/rules.js",
+    "maximum": "node install-full.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dracalight/Blocks.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Dracalight/Blocks/issues"
+  },
+  "homepage": "https://github.com/Dracalight/Blocks#readme",
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "stockfish": "^19.0.1"
+  }
+}
