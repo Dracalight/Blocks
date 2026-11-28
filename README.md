@@ -55,3 +55,30 @@ El harness `node tests/match.js [ejecutableA] [ejecutableB]` acepta motores UCI 
 ## Licencias y distribución
 
 Código y recursos originales del juego bajo GPL-3.0-only. Stockfish.js y Stockfish bajo GPLv3. Se incluye el árbol fuente de la etiqueta exacta con sus scripts de compilación en source/stockfish-js-v19.0.1.tar.gz. Consulta su README y build.js para Emscripten y las descargas de redes necesarias. Chess.js 1.4.0 bajo BSD-2-Clause. Avisos y textos en app/licenses/. Al redistribuir la aplicación mantén accesibles las fuentes correspondientes y avisos junto a los binarios. El proyecto usa gráficos propios.
+
+## V2 neural acceleration branch — audit and current evidence
+
+Branch `game/nexus-mittens-v2-neural-acceleration` starts at V1 commit `c552b7d`. The checkout contains the offline chess client, chess.js legal move state, Stockfish.js 19.0.1 lite single-thread runtime, optional full engine installer, procedural projection generator, localStorage game persistence, service worker, and optional loopback/provider adapter. V1's seven Node rule tests pass in this environment. Physical iOS and Windows runs were not available.
+
+This branch adds `app/hardware.js`, a conservative NHAE capability probe that requests a real WebGPU adapter and device, reports exposed limits/features without claiming physical GPU identity, probes WASM SIMD/shared memory/storage, and selects only a conservative tier. `app/neural-runtime.js` defines an explicit runtime contract and deliberately reports no model backend until one is actually installed. It does not pretend that API availability is model inference. `app/resource-scheduler.js` provides abortable background task coordination.
+
+### Acceptance status (evidence in this checkout)
+
+| State | Result | Evidence / limitation |
+|---|---|---|
+| CHESS_CORE | PASS | Existing chess.js runtime; seven Node tests pass |
+| STOCKFISH_RUNTIME | INCOMPLETE | V1 lite assets and full installer present; browser tests not rerun here |
+| LOCAL_LLM_RUNTIME | INCOMPLETE | Contract only; no bundled/integrated local model runtime |
+| WEBGPU_ACCELERATION | NOT_RUN | Probe exists; no real model inference backend to validate |
+| CPU_FALLBACK | INCOMPLETE | V1 procedural generator works; no local LLM WASM runtime |
+| PROJECTION_QUALITY | NOT_RUN | No 150-event model benchmark |
+| MODEL_MANAGER | INCOMPLETE | No model catalog/download/verification UI |
+| OFFLINE_MODE | INCOMPLETE | V1 app shell and chess engine cache; model offline storage absent |
+| RESOURCE_SCHEDULER | INCOMPLETE | Abortable primitive added; not yet wired throughout gameplay |
+| IOS_PHYSICAL_VALIDATION | NOT_VERIFIED | No physical iPhone/Safari access |
+| WINDOWS_PHYSICAL_VALIDATION | NOT_VERIFIED | No physical Windows device access |
+| LC0_EXPERIMENTAL | NOT_RUN | No verified browser UCI implementation |
+| MITTENS_DIRECT_SUPERIORITY | NOT_VERIFIED | Original engine/configuration unavailable |
+| DEPLOYMENT | NOT_RUN | Remote branch push not yet verified |
+
+WebLLM is the strongest candidate for a WebGPU browser runtime; Transformers.js/ONNX Runtime Web offer broader task/runtime coverage but do not by themselves provide an appropriate chat model package. A real integration requires a pinned runtime and model manifest, user-initiated download with integrity metadata, browser/device inference run, worker lifecycle, and tested persistence. Safari/iOS memory ceilings and GPU availability are OS/browser policy decisions and cannot be inferred from the device's nominal 6 GB RAM. GitHub Pages cannot set COOP/COEP, so its deployment should remain single-threaded unless headers are supplied by another host.
