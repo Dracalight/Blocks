@@ -1,6 +1,7 @@
 import {Chess} from './chess.js'
 import {search,cancel} from './engine.js'
 import {analyze,project,value} from './analyzer.js'
+import {inspectHardware} from './hardware.js'
 const $=id=>document.getElementById(id), ids=['side','mode','profile','ms','depth','hash','theme','provider','threads','intensity']
 let elapsed={w:0,b:0},tick=Date.now()
 let game=new Chess(), rows=[], end='', selected='', busy=false, epoch=0, side='w', pending=null
@@ -71,6 +72,11 @@ $('board').addEventListener('touchstart',e=>{touch=e.target.closest('.sq')?.data
 $('board').addEventListener('touchend',e=>{const t=e.changedTouches[0],to=document.elementFromPoint(t.clientX,t.clientY)?.closest('.sq')?.dataset.square;if(touch&&to&&touch!==to){e.preventDefault();move(touch,to)}},{passive:false})
 run()
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{})
+inspectHardware().then(h=>{
+ const gpu=h.webgpu.device?'WebGPU: dispositivo creado':h.webgpu.adapter?'WebGPU: adaptador disponible':'WebGPU: no disponible'
+ $('hardware-status').textContent=`Tier ${h.tier} · ${h.profile} · ${gpu}`
+ $('hardware-details').textContent=JSON.stringify({wasm:h.wasm,sharedArrayBuffer:h.sharedArrayBuffer,crossOriginIsolated:h.isolated,logicalCores:h.logicalCores,storage:h.storage,webgpu:h.webgpu,notes:h.notes},null,2)
+}).catch(()=>{$('hardware-status').textContent='Detección no disponible; juego en perfil universal.'})
 let branchStep=0
 function showReview(){
  const hist=game.history({verbose:true}),i=Number($('ply').value),m=hist[i-1]
