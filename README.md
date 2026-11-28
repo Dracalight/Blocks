@@ -82,3 +82,8 @@ This branch adds `app/hardware.js`, a conservative NHAE capability probe that re
 | DEPLOYMENT | NOT_RUN | Remote branch push not yet verified |
 
 WebLLM is the strongest candidate for a WebGPU browser runtime; Transformers.js/ONNX Runtime Web offer broader task/runtime coverage but do not by themselves provide an appropriate chat model package. A real integration requires a pinned runtime and model manifest, user-initiated download with integrity metadata, browser/device inference run, worker lifecycle, and tested persistence. Safari/iOS memory ceilings and GPU availability are OS/browser policy decisions and cannot be inferred from the device's nominal 6 GB RAM. GitHub Pages cannot set COOP/COEP, so its deployment should remain single-threaded unless headers are supplied by another host.
+
+
+### Validation note — 2026-11-28
+
+The latest UI integration exposes the NHAE results and adds its modules to the versioned PWA cache. In the current scratch environment, `node --check` passed for `game.js`, `hardware.js`, `neural-runtime.js`, `resource-scheduler.js`, and `sw.js`; a one-off scheduler smoke check confirmed that starting a new game aborts background work and invalidates the previous generation token. The full `npm test`, browser/Stockfish checks, and UI run were **NOT_RUN** in this invocation because the assigned workspace had no repository checkout. The V1 validation table above records inherited evidence and was not rerun here. NHAE diagnostics are only capability probes; no local LLM or GPU inference is integrated or demonstrated.
